@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__get_publishable_keys",
+      "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__list_tables",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__Claude_in_Chrome__tabs_close_mcp",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__get_page_text",
+      "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__execute_sql"
+    ]
+  }
+}
