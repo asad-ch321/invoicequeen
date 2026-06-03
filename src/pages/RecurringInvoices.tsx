@@ -33,7 +33,7 @@ export default function RecurringInvoices() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    await supabase.from('recurring_invoices').insert({
+    await (supabase.from('recurring_invoices') as any).insert({
       user_id: user.id,
       template_name: form.template_name,
       client_id: form.client_id || null,
@@ -52,7 +52,7 @@ export default function RecurringInvoices() {
   };
 
   const toggleActive = async (id: string, active: boolean) => {
-    await supabase.from('recurring_invoices').update({ active: !active }).eq('id', id);
+    await (supabase.from('recurring_invoices') as any).update({ active: !active }).eq('id', id);
     fetchData();
   };
 

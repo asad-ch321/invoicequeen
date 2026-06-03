@@ -38,7 +38,7 @@ export default function InvoiceForm() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('clients').select('*').eq('user_id', user.id).order('name').then(({ data }) => {
+    supabase.from('clients').select('*').eq('user_id', user.id).order('name').then(({ data }: any) => {
       setClients(data || []);
     });
 
@@ -46,7 +46,7 @@ export default function InvoiceForm() {
       Promise.all([
         supabase.from('invoices').select('*').eq('id', id).single(),
         supabase.from('invoice_items').select('*').eq('invoice_id', id).order('position'),
-      ]).then(([invRes, itemsRes]) => {
+      ]).then(([invRes, itemsRes]: any[]) => {
         if (invRes.data) {
           const inv = invRes.data;
           setClientId(inv.client_id || '');
@@ -60,7 +60,7 @@ export default function InvoiceForm() {
           setNotes(inv.notes || '');
         }
         if (itemsRes.data && itemsRes.data.length > 0) {
-          setItems(itemsRes.data.map(i => ({
+          setItems(itemsRes.data.map((i: any) => ({
             id: i.id,
             description: i.description,
             quantity: Number(i.quantity),
@@ -126,10 +126,10 @@ export default function InvoiceForm() {
 
     let invoiceId = id;
     if (isEdit) {
-      await supabase.from('invoices').update(invoiceData).eq('id', id);
-      await supabase.from('invoice_items').delete().eq('invoice_id', id!);
+      await (supabase.from('invoices') as any).update(invoiceData).eq('id', id);
+      await (supabase.from('invoice_items') as any).delete().eq('invoice_id', id!);
     } else {
-      const { data } = await supabase.from('invoices').insert(invoiceData).select('id').single();
+      const { data } = await (supabase.from('invoices') as any).insert(invoiceData).select('id').single();
       invoiceId = data?.id;
     }
 
@@ -142,7 +142,7 @@ export default function InvoiceForm() {
         amount: item.amount,
         position: i,
       }));
-      await supabase.from('invoice_items').insert(itemsData);
+      await (supabase.from('invoice_items') as any).insert(itemsData);
     }
 
     setSaving(false);

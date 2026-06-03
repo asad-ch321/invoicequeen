@@ -31,12 +31,12 @@ export default function Payments() {
     const isFullPayment = amount >= newTotal;
 
     if (isFullPayment) {
-      await supabase.from('invoices').update({
+      await (supabase.from('invoices') as any).update({
         status: 'paid',
         paid_at: new Date().toISOString(),
       }).eq('id', invoice.id);
     } else {
-      await supabase.from('invoices').update({
+      await (supabase.from('invoices') as any).update({
         total: newTotal - amount,
         notes: `${invoice.notes || ''}\nPartial payment of $${amount.toFixed(2)} recorded on ${new Date().toLocaleDateString()}`.trim(),
       }).eq('id', invoice.id);

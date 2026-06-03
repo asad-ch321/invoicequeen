@@ -44,9 +44,9 @@ export default function Clients() {
     e.preventDefault();
     if (!user) return;
     if (editingClient) {
-      await supabase.from('clients').update({ ...form }).eq('id', editingClient.id);
+      await (supabase.from('clients') as any).update({ ...form }).eq('id', editingClient.id);
     } else {
-      await supabase.from('clients').insert({ ...form, user_id: user.id });
+      await (supabase.from('clients') as any).insert({ ...form, user_id: user.id });
     }
     setShowModal(false);
     fetchClients();
