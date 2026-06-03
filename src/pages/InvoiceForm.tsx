@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Download, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { Client, InvoiceItem } from '../types/database';
+import type { Client } from '../types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 

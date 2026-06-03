@@ -61,13 +61,3 @@ export interface RecurringInvoice {
   client?: Client;
 }
 
-export interface Database {
-  public: {
-    Tables: {
-      clients: { Row: Client; Insert: Omit<Client, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Client> };
-      invoices: { Row: Invoice; Insert: Omit<Invoice, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Invoice> };
-      invoice_items: { Row: InvoiceItem; Insert: Omit<InvoiceItem, 'id'>; Update: Partial<InvoiceItem> };
-      recurring_invoices: { Row: RecurringInvoice; Insert: Omit<RecurringInvoice, 'id' | 'created_at' | 'updated_at'>; Update: Partial<RecurringInvoice> };
-    };
-  };
-}
