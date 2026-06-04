@@ -33,7 +33,7 @@ export default function ClientDetail() {
 
   return (
     <div className="page">
-      <button onClick={() => navigate('/clients')} className="btn btn-ghost mb-4"><ArrowLeft size={18} /> Back to Clients</button>
+      <button onClick={() => navigate('/app/clients')} className="btn btn-ghost mb-4"><ArrowLeft size={18} /> Back to Clients</button>
 
       <div className="two-col-grid">
         <div className="card">
@@ -67,7 +67,7 @@ export default function ClientDetail() {
               <tbody>
                 {invoices.map(inv => (
                   <tr key={inv.id}>
-                    <td><Link to={`/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
+                    <td><Link to={`/app/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
                     <td>{new Date(inv.issue_date).toLocaleDateString()}</td>
                     <td>{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                     <td><StatusBadge status={inv.status} /></td>

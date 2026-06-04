@@ -7,13 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const links = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/invoices', icon: FileText, label: 'Invoices' },
-  { to: '/clients', icon: Users, label: 'Clients' },
-  { to: '/recurring', icon: RefreshCw, label: 'Recurring' },
-  { to: '/payments', icon: CreditCard, label: 'Payments' },
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/app', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/app/invoices', icon: FileText, label: 'Invoices' },
+  { to: '/app/clients', icon: Users, label: 'Clients' },
+  { to: '/app/recurring', icon: RefreshCw, label: 'Recurring' },
+  { to: '/app/payments', icon: CreditCard, label: 'Payments' },
+  { to: '/app/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/app/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Sidebar() {
@@ -31,7 +31,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/app'}
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
           >
             <Icon size={20} />

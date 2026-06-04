@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link, useLocation } from 'react-router-dom';
 import { Crown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(location.pathname === '/signup');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <Crown size={40} className="brand-icon" />
+          <Link to="/" className="brand-icon-link"><Crown size={40} className="brand-icon" /></Link>
           <h1>InvoiceQueen</h1>
           <p>Premium invoicing for modern businesses</p>
         </div>
@@ -62,6 +63,9 @@ export default function Login() {
           <button onClick={() => { setIsSignUp(!isSignUp); setError(''); }} className="link-btn">
             {isSignUp ? 'Sign In' : 'Sign Up'}
           </button>
+        </p>
+        <p className="login-toggle">
+          <Link to="/" className="link-btn">← Back to home</Link>
         </p>
       </div>
     </div>

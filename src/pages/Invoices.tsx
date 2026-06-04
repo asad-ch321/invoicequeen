@@ -41,7 +41,7 @@ export default function Invoices() {
     <div className="page">
       <div className="page-header">
         <h1>Invoices</h1>
-        <Link to="/invoices/new" className="btn btn-primary"><Plus size={18} /> New Invoice</Link>
+        <Link to="/app/invoices/new" className="btn btn-primary"><Plus size={18} /> New Invoice</Link>
       </div>
 
       <div className="filters-bar">
@@ -71,7 +71,7 @@ export default function Invoices() {
         {filtered.length === 0 ? (
           <div className="empty-state">
             <p>No invoices found</p>
-            <Link to="/invoices/new" className="btn btn-primary">Create your first invoice</Link>
+            <Link to="/app/invoices/new" className="btn btn-primary">Create your first invoice</Link>
           </div>
         ) : (
           <table className="table">
@@ -96,7 +96,7 @@ export default function Invoices() {
                   <td className="font-medium">{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                   <td><StatusBadge status={inv.status} /></td>
                   <td>
-                    <Link to={`/invoices/${inv.id}`} className="btn btn-sm btn-ghost">Edit</Link>
+                    <Link to={`/app/invoices/${inv.id}`} className="btn btn-sm btn-ghost">Edit</Link>
                   </td>
                 </tr>
               ))}

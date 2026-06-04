@@ -87,7 +87,7 @@ export default function Clients() {
               {filtered.map(c => (
                 <tr key={c.id}>
                   <td>
-                    <Link to={`/clients/${c.id}`} className="link">
+                    <Link to={`/app/clients/${c.id}`} className="link">
                       <div className="flex items-center gap-2">
                         <div className="client-avatar-sm">{c.name.charAt(0)}</div>
                         <span className="font-medium">{c.name}</span>

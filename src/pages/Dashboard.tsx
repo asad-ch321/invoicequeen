@@ -59,7 +59,7 @@ export default function Dashboard() {
     <div className="page">
       <div className="page-header">
         <h1>Dashboard</h1>
-        <Link to="/invoices/new" className="btn btn-primary">+ New Invoice</Link>
+        <Link to="/app/invoices/new" className="btn btn-primary">+ New Invoice</Link>
       </div>
 
       <div className="stats-grid">
@@ -120,7 +120,7 @@ export default function Dashboard() {
               <tbody>
                 {invoices.slice(0, 5).map(inv => (
                   <tr key={inv.id}>
-                    <td><Link to={`/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
+                    <td><Link to={`/app/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
                     <td>{(inv.client as any)?.name || '—'}</td>
                     <td>{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                     <td><StatusBadge status={inv.status} /></td>

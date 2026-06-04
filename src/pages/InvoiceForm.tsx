@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Plus, Trash2, Download, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -152,7 +152,7 @@ export default function InvoiceForm() {
     }
 
     setSaving(false);
-    navigate('/invoices');
+    navigate('/app/invoices');
   };
 
   // Load a (possibly remote) image into a PNG data URL via canvas.
@@ -385,7 +385,7 @@ export default function InvoiceForm() {
         </div>
       ) : (
         <div className="setup-hint">
-          No business profile set up yet. <a href="/settings">Go to Settings</a> to add your business name and logo.
+          No business profile set up yet. <Link to="/app/settings">Go to Settings</Link> to add your business name and logo.
         </div>
       )}
 
@@ -473,7 +473,7 @@ export default function InvoiceForm() {
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate('/invoices')} className="btn btn-ghost">Cancel</button>
+          <button type="button" onClick={() => navigate('/app/invoices')} className="btn btn-ghost">Cancel</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Saving...' : isEdit ? 'Update Invoice' : 'Create Invoice'}
           </button>
