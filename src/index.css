@@ -630,6 +630,18 @@ body {
 }
 
 .login-header .brand-icon { color: #6366f1; margin-bottom: 12px; }
+
+.confirm-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .login-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
 .login-header p { color: var(--text-secondary); font-size: 14px; }
 

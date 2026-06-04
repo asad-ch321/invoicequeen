@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, Link, useLocation } from 'react-router-dom';
-import { Crown } from 'lucide-react';
+import { Crown, MailCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -11,6 +11,7 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(location.pathname === '/signup');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmSent, setConfirmSent] = useState(false);
 
   if (user) return <Navigate to="/app" replace />;
 
@@ -18,10 +19,45 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error } = isSignUp ? await signUp(email, password) : await signIn(email, password);
-    if (error) setError(error.message);
+    if (isSignUp) {
+      const { error, needsConfirmation } = await signUp(email, password);
+      if (error) setError(error.message);
+      else if (needsConfirmation) setConfirmSent(true);
+      // if no confirmation needed, onAuthStateChange logs them in and redirects
+    } else {
+      const { error } = await signIn(email, password);
+      if (error) setError(error.message);
+    }
     setLoading(false);
   };
+
+  // ----- Check your email screen (after signup) -----
+  if (confirmSent) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-header">
+            <div className="confirm-icon"><MailCheck size={36} /></div>
+            <h1>Check your email</h1>
+            <p>
+              We sent a confirmation link to <strong>{email}</strong>.
+              Click it to activate your account, then sign in.
+            </p>
+          </div>
+          <button
+            className="btn btn-primary btn-full"
+            onClick={() => { setConfirmSent(false); setIsSignUp(false); setPassword(''); }}
+          >
+            Back to Sign In
+          </button>
+          <p className="login-toggle" style={{ marginTop: 16 }}>
+            Didn’t get it? Check your spam folder, or{' '}
+            <button onClick={() => setConfirmSent(false)} className="link-btn">try again</button>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
