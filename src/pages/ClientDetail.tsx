@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Phone, Building, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StatusBadge from '../components/StatusBadge';
+import { formatMoney } from '../lib/currencies';
 import type { Client, Invoice } from '../types/database';
 
 export default function ClientDetail() {
@@ -52,8 +53,8 @@ export default function ClientDetail() {
           {client.notes && <div className="mt-4"><p className="text-sm text-secondary">{client.notes}</p></div>}
 
           <div className="stats-row mt-4">
-            <div><p className="stat-label">Total Billed</p><p className="stat-value">${totalBilled.toFixed(2)}</p></div>
-            <div><p className="stat-label">Total Paid</p><p className="stat-value text-green">${totalPaid.toFixed(2)}</p></div>
+            <div><p className="stat-label">Total Billed</p><p className="stat-value">{formatMoney(totalBilled, 'USD')}</p></div>
+            <div><p className="stat-label">Total Paid</p><p className="stat-value text-green">{formatMoney(totalPaid, 'USD')}</p></div>
             <div><p className="stat-label">Invoices</p><p className="stat-value">{invoices.length}</p></div>
           </div>
         </div>
@@ -68,7 +69,7 @@ export default function ClientDetail() {
                   <tr key={inv.id}>
                     <td><Link to={`/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
                     <td>{new Date(inv.issue_date).toLocaleDateString()}</td>
-                    <td>${Number(inv.total).toFixed(2)}</td>
+                    <td>{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                     <td><StatusBadge status={inv.status} /></td>
                   </tr>
                 ))}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Save, Building } from 'lucide-react';
+import CurrencySelect from '../components/CurrencySelect';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('business');
@@ -98,12 +99,7 @@ export default function Settings() {
           <div className="form-grid-2">
             <div className="form-group">
               <label>Default Currency</label>
-              <select value={defaults.currency} onChange={e => setDefaults({ ...defaults, currency: e.target.value })}>
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (&euro;)</option>
-                <option value="GBP">GBP (&pound;)</option>
-                <option value="PKR">PKR (Rs)</option>
-              </select>
+              <CurrencySelect value={defaults.currency} onChange={v => setDefaults({ ...defaults, currency: v })} />
             </div>
             <div className="form-group">
               <label>Default Tax Rate (%)</label>

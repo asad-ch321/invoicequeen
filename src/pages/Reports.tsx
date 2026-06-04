@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { formatMoney } from '../lib/currencies';
 import type { Invoice, Client } from '../types/database';
 
 export default function Reports() {
@@ -69,13 +70,13 @@ export default function Reports() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div><p className="stat-label">Total Revenue</p><p className="stat-value">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p></div>
+          <div><p className="stat-label">Total Revenue</p><p className="stat-value">{formatMoney(totalRevenue, 'USD')}</p></div>
         </div>
         <div className="stat-card">
-          <div><p className="stat-label">Total Invoiced</p><p className="stat-value">${totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p></div>
+          <div><p className="stat-label">Total Invoiced</p><p className="stat-value">{formatMoney(totalInvoiced, 'USD')}</p></div>
         </div>
         <div className="stat-card">
-          <div><p className="stat-label">Average Invoice</p><p className="stat-value">${avgInvoice.toFixed(2)}</p></div>
+          <div><p className="stat-label">Average Invoice</p><p className="stat-value">{formatMoney(avgInvoice, 'USD')}</p></div>
         </div>
         <div className="stat-card">
           <div><p className="stat-label">Total Invoices</p><p className="stat-value">{invoices.length}</p></div>

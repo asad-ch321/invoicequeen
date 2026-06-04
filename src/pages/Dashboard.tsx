@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
+import { formatMoney } from '../lib/currencies';
 import type { Invoice, Client } from '../types/database';
 
 const PIE_COLORS = ['#6366f1', '#f59e0b', '#ef4444', '#94a3b8'];
@@ -64,11 +65,11 @@ export default function Dashboard() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon green"><DollarSign size={24} /></div>
-          <div><p className="stat-label">Total Revenue</p><p className="stat-value">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p></div>
+          <div><p className="stat-label">Total Revenue</p><p className="stat-value">{formatMoney(totalRevenue, 'USD')}</p></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon amber"><Clock size={24} /></div>
-          <div><p className="stat-label">Outstanding</p><p className="stat-value">${outstanding.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p></div>
+          <div><p className="stat-label">Outstanding</p><p className="stat-value">{formatMoney(outstanding, 'USD')}</p></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon indigo"><CheckCircle size={24} /></div>
@@ -121,7 +122,7 @@ export default function Dashboard() {
                   <tr key={inv.id}>
                     <td><Link to={`/invoices/${inv.id}`} className="link">{inv.invoice_number}</Link></td>
                     <td>{(inv.client as any)?.name || '—'}</td>
-                    <td>${Number(inv.total).toFixed(2)}</td>
+                    <td>{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                     <td><StatusBadge status={inv.status} /></td>
                   </tr>
                 ))}
@@ -143,7 +144,7 @@ export default function Dashboard() {
                     <p className="font-medium">{c.name}</p>
                     <p className="text-sm text-secondary">{c.company || c.email || ''}</p>
                   </div>
-                  <p className="font-medium">${c.total.toFixed(2)}</p>
+                  <p className="font-medium">{formatMoney(c.total, 'USD')}</p>
                 </div>
               ))}
             </div>

@@ -4,6 +4,7 @@ import { Search, Plus, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
+import { formatMoney } from '../lib/currencies';
 import type { Invoice } from '../types/database';
 
 export default function Invoices() {
@@ -92,7 +93,7 @@ export default function Invoices() {
                   <td>{(inv as any).client?.name || '—'}</td>
                   <td>{new Date(inv.issue_date).toLocaleDateString()}</td>
                   <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
-                  <td className="font-medium">${Number(inv.total).toFixed(2)}</td>
+                  <td className="font-medium">{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                   <td><StatusBadge status={inv.status} /></td>
                   <td>
                     <Link to={`/invoices/${inv.id}`} className="btn btn-sm btn-ghost">Edit</Link>

@@ -10,7 +10,9 @@
       "mcp__Claude_in_Chrome__browser_batch",
       "mcp__Claude_in_Chrome__read_console_messages",
       "mcp__Claude_in_Chrome__get_page_text",
-      "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__execute_sql"
+      "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__execute_sql",
+      "PowerShell(winget install --id GitHub.cli --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); cd \"C:\\\\Users\\\\Asad\\\\Documents\\\\invoice queen l\"; gh auth status 2>&1)"
     ]
   }
 }

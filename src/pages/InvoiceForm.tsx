@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Download, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getCurrencySymbol, formatMoney } from '../lib/currencies';
+import CurrencySelect from '../components/CurrencySelect';
 import type { Client } from '../types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -35,6 +37,8 @@ export default function InvoiceForm() {
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unit_price: 0, amount: 0, position: 0 }]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const sym = getCurrencySymbol(currency);
 
   useEffect(() => {
     if (!user) return;
@@ -152,6 +156,7 @@ export default function InvoiceForm() {
   const exportPDF = () => {
     const doc = new jsPDF();
     const client = clients.find(c => c.id === clientId);
+    const s = sym;
 
     doc.setFontSize(24);
     doc.setTextColor(99, 102, 241);
@@ -161,7 +166,8 @@ export default function InvoiceForm() {
     doc.setTextColor(60, 60, 60);
     doc.text(`Invoice: ${invoiceNumber}`, 20, 40);
     doc.text(`Date: ${issueDate}`, 20, 48);
-    if (dueDate) doc.text(`Due: ${dueDate}`, 20, 56);
+    doc.text(`Currency: ${currency}`, 20, 56);
+    if (dueDate) doc.text(`Due: ${dueDate}`, 20, 64);
     if (client) {
       doc.text(`Bill To: ${client.name}`, 120, 40);
       if (client.company) doc.text(client.company, 120, 48);
@@ -169,20 +175,20 @@ export default function InvoiceForm() {
     }
 
     autoTable(doc, {
-      startY: 70,
+      startY: 76,
       head: [['Description', 'Qty', 'Unit Price', 'Amount']],
-      body: items.map(i => [i.description, i.quantity.toString(), `$${i.unit_price.toFixed(2)}`, `$${i.amount.toFixed(2)}`]),
+      body: items.map(i => [i.description, i.quantity.toString(), `${s}${i.unit_price.toFixed(2)}`, `${s}${i.amount.toFixed(2)}`]),
       theme: 'striped',
       headStyles: { fillColor: [99, 102, 241] },
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY || 120;
-    doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, finalY + 10);
-    doc.text(`Tax (${taxRate}%): $${taxAmount.toFixed(2)}`, 140, finalY + 18);
-    if (discount > 0) doc.text(`Discount: -$${discount.toFixed(2)}`, 140, finalY + 26);
+    doc.text(`Subtotal: ${s}${subtotal.toFixed(2)}`, 140, finalY + 10);
+    doc.text(`Tax (${taxRate}%): ${s}${taxAmount.toFixed(2)}`, 140, finalY + 18);
+    if (discount > 0) doc.text(`Discount: -${s}${discount.toFixed(2)}`, 140, finalY + 26);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Total: $${total.toFixed(2)}`, 140, finalY + (discount > 0 ? 36 : 28));
+    doc.text(`Total: ${s}${total.toFixed(2)}`, 140, finalY + (discount > 0 ? 36 : 28));
 
     if (notes) {
       doc.setFontSize(10);
@@ -242,12 +248,7 @@ export default function InvoiceForm() {
             </div>
             <div className="form-group">
               <label>Currency</label>
-              <select value={currency} onChange={e => setCurrency(e.target.value)}>
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (&euro;)</option>
-                <option value="GBP">GBP (&pound;)</option>
-                <option value="PKR">PKR (Rs)</option>
-              </select>
+              <CurrencySelect value={currency} onChange={setCurrency} />
             </div>
           </div>
         </div>
@@ -264,7 +265,7 @@ export default function InvoiceForm() {
                   <td><input type="text" value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Item description" required /></td>
                   <td><input type="number" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="any" className="input-sm" /></td>
                   <td><input type="number" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="input-sm" /></td>
-                  <td className="font-medium">${item.amount.toFixed(2)}</td>
+                  <td className="font-medium">{formatMoney(item.amount, currency)}</td>
                   <td><button type="button" onClick={() => removeItem(i)} className="btn-icon danger"><Trash2 size={16} /></button></td>
                 </tr>
               ))}
@@ -282,17 +283,17 @@ export default function InvoiceForm() {
               </div>
             </div>
             <div className="totals-section">
-              <div className="total-row"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+              <div className="total-row"><span>Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
               <div className="total-row">
                 <span>Tax Rate (%)</span>
                 <input type="number" value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} min="0" step="0.1" className="input-sm" />
               </div>
-              <div className="total-row"><span>Tax Amount</span><span>${taxAmount.toFixed(2)}</span></div>
+              <div className="total-row"><span>Tax Amount</span><span>{formatMoney(taxAmount, currency)}</span></div>
               <div className="total-row">
                 <span>Discount</span>
                 <input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} min="0" step="0.01" className="input-sm" />
               </div>
-              <div className="total-row total-final"><span>Total</span><span>${total.toFixed(2)}</span></div>
+              <div className="total-row total-final"><span>Total</span><span>{formatMoney(total, currency)}</span></div>
             </div>
           </div>
         </div>

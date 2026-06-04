@@ -3,6 +3,7 @@ import { DollarSign, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
+import { formatMoney } from '../lib/currencies';
 import type { Invoice } from '../types/database';
 
 export default function Payments() {
@@ -68,7 +69,7 @@ export default function Payments() {
                 <tr key={inv.id}>
                   <td className="font-medium">{inv.invoice_number}</td>
                   <td>{(inv as any).client?.name || '—'}</td>
-                  <td className="font-medium">${Number(inv.total).toFixed(2)}</td>
+                  <td className="font-medium">{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                   <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
                   <td><StatusBadge status={inv.status} /></td>
                   <td>
@@ -113,7 +114,7 @@ export default function Payments() {
                 <tr key={inv.id}>
                   <td className="font-medium">{inv.invoice_number}</td>
                   <td>{(inv as any).client?.name || '—'}</td>
-                  <td className="font-medium">${Number(inv.total).toFixed(2)}</td>
+                  <td className="font-medium">{formatMoney(Number(inv.total), inv.currency || 'USD')}</td>
                   <td>{inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : '—'}</td>
                   <td><StatusBadge status={inv.status} /></td>
                 </tr>
