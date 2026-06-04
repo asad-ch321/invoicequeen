@@ -155,7 +155,30 @@ export default function InvoiceForm() {
     navigate('/invoices');
   };
 
-  const exportPDF = () => {
+  // Load a (possibly remote) image into a PNG data URL via canvas.
+  // Returns null if it fails (e.g. CORS-tainted canvas) so the PDF still generates.
+  const loadImageData = (url: string): Promise<{ dataUrl: string; width: number; height: number } | null> =>
+    new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+          ctx.drawImage(img, 0, 0);
+          resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.naturalWidth, height: img.naturalHeight });
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+
+  const exportPDF = async () => {
     const doc = new jsPDF();
     const client = clients.find(c => c.id === clientId);
     const s = sym;
@@ -164,15 +187,29 @@ export default function InvoiceForm() {
 
     // Business branding header
     if (bizProfile) {
+      // Logo (left side) — embed actual image if available
+      let textX = 20;
+      if (bizProfile.logo_url) {
+        const imgData = await loadImageData(bizProfile.logo_url);
+        if (imgData) {
+          const maxW = 35, maxH = 22;
+          const ratio = Math.min(maxW / imgData.width, maxH / imgData.height);
+          const w = imgData.width * ratio;
+          const h = imgData.height * ratio;
+          doc.addImage(imgData.dataUrl, 'PNG', 20, yPos - 6, w, h);
+          textX = 20 + w + 6; // shift business name to the right of the logo
+        }
+      }
+
       doc.setFontSize(20);
       doc.setTextColor(99, 102, 241);
-      doc.text(bizProfile.business_name, 20, yPos);
+      doc.text(bizProfile.business_name, textX, yPos);
       yPos += 8;
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      if (bizProfile.address) { doc.text(bizProfile.address, 20, yPos); yPos += 5; }
-      if (bizProfile.email) { doc.text(bizProfile.email, 20, yPos); yPos += 5; }
-      if (bizProfile.phone) { doc.text(bizProfile.phone, 20, yPos); yPos += 5; }
+      if (bizProfile.address) { doc.text(bizProfile.address, textX, yPos); yPos += 5; }
+      if (bizProfile.email) { doc.text(bizProfile.email, textX, yPos); yPos += 5; }
+      if (bizProfile.phone) { doc.text(bizProfile.phone, textX, yPos); yPos += 5; }
     }
     yPos += 6;
 
