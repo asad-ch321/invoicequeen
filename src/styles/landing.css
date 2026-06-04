@@ -272,6 +272,82 @@
 .lp-feature-card h3 { font-size: 17px; font-weight: 700; color: var(--lp-ink); margin-bottom: 8px; }
 .lp-feature-card p { font-size: 14px; }
 
+/* ---------- Trusted by ---------- */
+.lp-trusted { padding: 40px 0 20px; }
+.lp-trusted-label {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--lp-muted);
+  margin-bottom: 24px;
+}
+.lp-trusted-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+}
+.lp-trusted-logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--lp-ink);
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.lp-trusted-logo:hover { opacity: 0.7; }
+
+/* ---------- Stats band ---------- */
+.lp-stats {
+  padding: 56px 0;
+  background: linear-gradient(135deg, var(--lp-primary), var(--lp-accent));
+}
+.lp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.lp-stat { text-align: center; color: #fff; }
+.lp-stat-value { font-size: 40px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+.lp-stat-label { font-size: 14px; color: rgba(255,255,255,0.85); margin-top: 8px; }
+
+/* ---------- Testimonials ---------- */
+.lp-testi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.lp-testi-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.lp-testi-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px -16px rgba(99,102,241,0.25); }
+.lp-testi-quote { color: rgba(99,102,241,0.25); }
+.lp-testi-stars { display: flex; gap: 2px; color: #f59e0b; }
+.lp-testi-text { font-size: 14.5px; color: var(--lp-text); line-height: 1.6; flex: 1; }
+.lp-testi-author { display: flex; align-items: center; gap: 12px; }
+.lp-testi-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--lp-primary), var(--lp-accent));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  flex-shrink: 0;
+}
+.lp-testi-name { font-weight: 700; color: var(--lp-ink); font-size: 14px; }
+.lp-testi-role { font-size: 13px; color: var(--lp-muted); }
+
 /* ---------- How it works ---------- */
 .lp-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
 .lp-step { text-align: center; padding: 0 12px; }
@@ -408,6 +484,10 @@
   .lp-hero-cta { justify-content: center; }
   .lp-hero-mockup { max-width: 440px; margin: 0 auto; }
   .lp-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp-testi-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+  .lp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+  .lp-trusted-logos { gap: 28px; }
+  .lp-trusted-logo { font-size: 18px; }
   .lp-steps { grid-template-columns: 1fr; gap: 36px; max-width: 420px; margin: 0 auto; }
   .lp-pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
   .lp-price-popular { transform: none; }
@@ -421,6 +501,7 @@
   .lp-section { padding: 64px 0; }
   .lp-section-head h2, .lp-cta-inner h2 { font-size: 30px; }
   .lp-features-grid { grid-template-columns: 1fr; }
+  .lp-stat-value { font-size: 32px; }
   .lp-hero-cta { flex-direction: column; }
   .lp-hero-cta .lp-btn { width: 100%; }
 }

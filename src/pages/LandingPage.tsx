@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Crown, FileText, Users, CheckCircle2, Palette, RefreshCw, CreditCard,
-  Menu, X, ChevronDown, Check, ArrowRight, Zap
+  Menu, X, ChevronDown, Check, ArrowRight, Zap, Star, Quote
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/landing.css';
@@ -138,6 +138,94 @@ function Hero() {
           <div className="lp-mockup-float lp-float-2">
             <FileText size={18} /> Invoice sent
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Trusted by (logo strip) ---------- */
+const trustedLogos = ['Acme Co', 'Northwind', 'Globex', 'Umbrella', 'Initech', 'Hooli'];
+
+function TrustedBy() {
+  return (
+    <section className="lp-trusted">
+      <div className="lp-container">
+        <p className="lp-trusted-label reveal">Trusted by 2,000+ freelancers & growing businesses</p>
+        <div className="lp-trusted-logos reveal">
+          {trustedLogos.map(name => (
+            <span className="lp-trusted-logo" key={name}>{name}</span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Stats band ---------- */
+const stats = [
+  { value: '50K+', label: 'Invoices created' },
+  { value: '$8M+', label: 'Payments processed' },
+  { value: '2,000+', label: 'Happy businesses' },
+  { value: '99.9%', label: 'Uptime' },
+];
+
+function Stats() {
+  return (
+    <section className="lp-stats">
+      <div className="lp-container lp-stats-grid">
+        {stats.map((s, i) => (
+          <div className="lp-stat reveal" key={s.label} style={{ transitionDelay: `${i * 70}ms` }}>
+            <div className="lp-stat-value">{s.value}</div>
+            <div className="lp-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Testimonials ---------- */
+const testimonials = [
+  {
+    quote: 'InvoiceQueen cut my invoicing time from hours to minutes. My clients love the clean PDFs and I get paid way faster now.',
+    name: 'Sarah Malik', role: 'Freelance Designer', initials: 'SM',
+  },
+  {
+    quote: 'The recurring invoices and payment tracking are game changers. I finally have a clear view of who owes me what.',
+    name: 'Daniel Reyes', role: 'Agency Owner', initials: 'DR',
+  },
+  {
+    quote: 'Custom branding made my invoices look so professional. It feels like an enterprise tool but it’s effortless to use.',
+    name: 'Aisha Khan', role: 'Marketing Consultant', initials: 'AK',
+  },
+];
+
+function Testimonials() {
+  return (
+    <section className="lp-section">
+      <div className="lp-container">
+        <div className="lp-section-head reveal">
+          <h2>Loved by businesses everywhere</h2>
+          <p>Don’t just take our word for it — here’s what our users say.</p>
+        </div>
+        <div className="lp-testi-grid">
+          {testimonials.map((t, i) => (
+            <div className="lp-testi-card reveal" key={t.name} style={{ transitionDelay: `${i * 70}ms` }}>
+              <Quote size={28} className="lp-testi-quote" />
+              <div className="lp-testi-stars">
+                {Array.from({ length: 5 }).map((_, j) => <Star key={j} size={15} fill="currentColor" />)}
+              </div>
+              <p className="lp-testi-text">{t.quote}</p>
+              <div className="lp-testi-author">
+                <div className="lp-testi-avatar">{t.initials}</div>
+                <div>
+                  <div className="lp-testi-name">{t.name}</div>
+                  <div className="lp-testi-role">{t.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -334,9 +422,12 @@ export default function LandingPage() {
     <div className="lp" ref={rootRef}>
       <Navbar />
       <Hero />
+      <TrustedBy />
       <Features />
       <HowItWorks />
+      <Stats />
       <Pricing />
+      <Testimonials />
       <FAQ />
       <CTABanner />
       <Footer />
