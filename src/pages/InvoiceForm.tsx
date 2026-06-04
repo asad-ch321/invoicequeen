@@ -4,6 +4,7 @@ import { Plus, Trash2, Download, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrencySymbol, formatMoney } from '../lib/currencies';
+import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import CurrencySelect from '../components/CurrencySelect';
 import type { Client } from '../types/database';
 import jsPDF from 'jspdf';
@@ -22,6 +23,7 @@ export default function InvoiceForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile: bizProfile } = useBusinessProfile();
   const isEdit = !!id;
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -158,24 +160,36 @@ export default function InvoiceForm() {
     const client = clients.find(c => c.id === clientId);
     const s = sym;
 
-    doc.setFontSize(24);
-    doc.setTextColor(99, 102, 241);
-    doc.text('InvoiceQueen', 20, 25);
+    let yPos = 20;
+
+    // Business branding header
+    if (bizProfile) {
+      doc.setFontSize(20);
+      doc.setTextColor(99, 102, 241);
+      doc.text(bizProfile.business_name, 20, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      if (bizProfile.address) { doc.text(bizProfile.address, 20, yPos); yPos += 5; }
+      if (bizProfile.email) { doc.text(bizProfile.email, 20, yPos); yPos += 5; }
+      if (bizProfile.phone) { doc.text(bizProfile.phone, 20, yPos); yPos += 5; }
+    }
+    yPos += 6;
 
     doc.setFontSize(12);
     doc.setTextColor(60, 60, 60);
-    doc.text(`Invoice: ${invoiceNumber}`, 20, 40);
-    doc.text(`Date: ${issueDate}`, 20, 48);
-    doc.text(`Currency: ${currency}`, 20, 56);
-    if (dueDate) doc.text(`Due: ${dueDate}`, 20, 64);
+    doc.text(`Invoice: ${invoiceNumber}`, 20, yPos);
+    doc.text(`Date: ${issueDate}`, 20, yPos + 8);
+    doc.text(`Currency: ${currency}`, 20, yPos + 16);
+    if (dueDate) doc.text(`Due: ${dueDate}`, 20, yPos + 24);
     if (client) {
-      doc.text(`Bill To: ${client.name}`, 120, 40);
-      if (client.company) doc.text(client.company, 120, 48);
-      if (client.email) doc.text(client.email, 120, 56);
+      doc.text(`Bill To: ${client.name}`, 120, yPos);
+      if (client.company) doc.text(client.company, 120, yPos + 8);
+      if (client.email) doc.text(client.email, 120, yPos + 16);
     }
 
     autoTable(doc, {
-      startY: 76,
+      startY: yPos + 34,
       head: [['Description', 'Qty', 'Unit Price', 'Amount']],
       body: items.map(i => [i.description, i.quantity.toString(), `${s}${i.unit_price.toFixed(2)}`, `${s}${i.amount.toFixed(2)}`]),
       theme: 'striped',
@@ -214,6 +228,25 @@ export default function InvoiceForm() {
           )}
         </div>
       </div>
+
+      {/* Business Branding Header */}
+      {bizProfile ? (
+        <div className="card">
+          <div className="invoice-brand-header">
+            {bizProfile.logo_url && <img src={bizProfile.logo_url} alt="Logo" className="invoice-brand-logo" />}
+            <div className="invoice-brand-info">
+              <h2>{bizProfile.business_name}</h2>
+              {bizProfile.address && <p>{bizProfile.address}</p>}
+              {bizProfile.email && <p>{bizProfile.email}</p>}
+              {bizProfile.phone && <p>{bizProfile.phone}</p>}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="setup-hint">
+          No business profile set up yet. <a href="/settings">Go to Settings</a> to add your business name and logo.
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="invoice-form">
         <div className="card">

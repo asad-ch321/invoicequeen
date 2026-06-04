@@ -61,3 +61,15 @@ export interface RecurringInvoice {
   client?: Client;
 }
 
+export interface BusinessProfile {
+  id: string;
+  user_id: string;
+  business_name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
