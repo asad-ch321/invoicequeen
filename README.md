@@ -206,13 +206,45 @@ Add `VITE_SUPABASE_ANON_KEY` as a Vercel environment variable.
 
 ## 🗺️ Roadmap (intentionally unfinished — easy buyer wins)
 
-The product is solid but a few revenue / polish items are intentionally left for the buyer to wire up the way they prefer:
+The product is solid but a few revenue / polish items are intentionally left for the buyer to wire up the way they prefer. Each item below has the UI already built — only the backend needs plugging in:
 
-- **Stripe / PayPal payment links** — UI shows "Payment Links" as a feature; backend wiring not included.
-- **Email-send button on invoices** — UI button exists but does not actually send the invoice (good place to plug in Resend + your own template).
-- **Automated late-payment reminders** — listed on the Business plan; cron / Edge Function not yet built.
-- **Tighter Storage RLS on logos bucket** — public read works fine for logo URLs; you can lock down listing if desired (see Supabase advisors).
-- **Optional: HaveIBeenPwned password check** — toggle in Supabase Auth settings.
+### 💳 Stripe — SaaS subscription billing (~3 hours)
+Landing pricing cards already render Free / Pro / Business and CTAs point at `/signup`. To turn the Pro and Business CTAs into real subscriptions:
+
+1. Create Stripe products + prices ($12/mo Pro, $25/mo Business — or your own).
+2. Add a `plan` column to `auth.users` (or a separate `subscriptions` table).
+3. Replace the "Start Free Trial" links in `src/pages/LandingPage.tsx` → `plans` array with a `<Link to="/app/checkout?plan=pro">` flow.
+4. Build a tiny Stripe Checkout redirect (Supabase Edge Function or a Next-style API route on Vercel).
+5. Add a Stripe webhook → Edge Function that updates the user's plan on `checkout.session.completed` and `customer.subscription.updated/deleted`.
+6. Enforce plan limits in the app (e.g. block invoice creation on Free after 5/month). The Free plan already advertises "5 invoices / month" — add a count check in `InvoiceForm` save handler.
+
+### 💸 Invoice payment links (~2 hours)
+The Business plan advertises "Payment links (Stripe/PayPal)" and the `invoices.payment_link` column already exists. To wire it up:
+
+1. Add a "Generate Payment Link" button to `InvoiceForm.tsx`.
+2. On click, call a Stripe Edge Function that creates a Payment Link for the invoice total + currency.
+3. Store the returned URL in `invoices.payment_link` and show it as a copy-able QR / link.
+4. Add a Stripe webhook for `checkout.session.completed` → mark invoice `status='paid'` and set `paid_at`.
+
+> **Note on Stripe Connect**: if each of your tenants needs to receive money into their OWN Stripe account (true marketplace model), you need Stripe Connect (more work). For a single-platform model where YOU receive all payments and pay out separately, regular Stripe is enough.
+
+### ✉️ "Send invoice" email (~1 hour)
+`InvoiceForm.tsx` has a Send button in the toolbar that currently does nothing. Plug it in:
+
+1. Build a Supabase Edge Function `send-invoice` that takes the invoice ID.
+2. The function loads the invoice + client + business profile, generates the PDF (server-side or attaches the link), and uses Resend (whose API key is already in Supabase SMTP) to email the client.
+3. Update the button onClick to call the function.
+
+### ⏰ Late-payment reminders (~1 hour)
+The Business plan promises this. To deliver:
+
+1. Build a Supabase Edge Function `send-reminders` that finds invoices where `due_date < CURRENT_DATE` and `status = 'unpaid'`.
+2. Send a reminder email via Resend for each.
+3. Schedule with Supabase cron (pg_cron) to run daily.
+
+### 🔒 Minor security hardening (~5 min each)
+- **Tighter Storage RLS on `logos` bucket** — public read works fine for logo URLs; lock down LIST if you want (see Supabase advisors).
+- **HaveIBeenPwned password check** — toggle in Supabase Auth settings.
 
 ---
 
