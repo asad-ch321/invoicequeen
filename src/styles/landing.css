@@ -460,6 +460,47 @@
 .lp-footer-links a:hover { color: #fff; }
 .lp-copy { font-size: 13px; color: #64748b; }
 
+/* ---------- Legal pages (Privacy, Terms) ---------- */
+.legal-page {
+  padding: 100px 0 60px;
+  background: var(--lp-bg);
+}
+.legal-container {
+  max-width: 760px;
+}
+.legal-page h1 {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--lp-ink);
+  margin-bottom: 8px;
+}
+.legal-effective {
+  font-size: 13px;
+  color: var(--lp-muted);
+  margin-bottom: 32px;
+}
+.legal-content h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--lp-ink);
+  margin: 32px 0 12px;
+}
+.legal-content p, .legal-content li {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--lp-text);
+}
+.legal-content p { margin-bottom: 14px; }
+.legal-content ul {
+  padding-left: 22px;
+  margin: 8px 0 18px;
+}
+.legal-content li { margin-bottom: 6px; }
+.legal-content a { color: var(--lp-primary); text-decoration: none; }
+.legal-content a:hover { text-decoration: underline; }
+.legal-content strong { color: var(--lp-ink); font-weight: 600; }
+
 /* ---------- Scroll reveal ---------- */
 .lp .reveal {
   opacity: 0;

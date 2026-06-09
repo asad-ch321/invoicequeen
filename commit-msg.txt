@@ -1,0 +1,19 @@
+Flippa-ready: legal pages, honest landing, README
+
+Landing page:
+- Remove fake "Acme Co / Northwind" trusted-by logo strip
+- Remove fake Sarah Malik / Daniel Reyes / Aisha Khan testimonials
+- Replace fake stats (50K+ invoices, $8M+ processed, 2,000+ businesses)
+  with honest capability stats (120+ currencies, Unlimited invoices,
+  5 min setup, 99.9% uptime SLA)
+
+Legal:
+- Add /privacy and /terms routes with full Privacy Policy and ToS
+- Update landing footer to link to /privacy and /terms (was href="#")
+
+Docs:
+- Replace default Vite README with comprehensive handover docs
+  (tech stack, env vars, Supabase setup, Resend SMTP, deployment,
+  project structure, customisation tips, roadmap)
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>

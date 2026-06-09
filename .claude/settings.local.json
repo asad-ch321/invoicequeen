@@ -17,7 +17,8 @@
       "mcp__79a33090-7942-48fe-8485-1f90e189835a__list_projects",
       "mcp__79a33090-7942-48fe-8485-1f90e189835a__list_deployments",
       "mcp__94d58708-303a-4f92-a95c-5e1fdcba1a89__apply_migration",
-      "Bash(rm -f \"/c/Users/Asad/Downloads/INV-544558.pdf\"; echo \"deleted\")"
+      "Bash(rm -f \"/c/Users/Asad/Downloads/INV-544558.pdf\"; echo \"deleted\")",
+      "mcp__Claude_in_Chrome__javascript_tool"
     ]
   }
 }
