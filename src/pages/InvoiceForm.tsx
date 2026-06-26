@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Plus, Trash2, Download, Send } from 'lucide-react';
+import { Plus, Trash2, Download, Send, Sparkles, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrencySymbol, formatMoney } from '../lib/currencies';
 import { useBusinessProfile } from '../hooks/useBusinessProfile';
+import { useAiCredits } from '../hooks/useAiCredits';
+import { callAi } from '../lib/ai';
+import { buildPaymentOptions, primaryPaymentLink } from '../lib/payments';
+import { logAudit } from '../lib/audit';
 import CurrencySelect from '../components/CurrencySelect';
 import type { Client } from '../types/database';
 import jsPDF from 'jspdf';
@@ -16,15 +20,27 @@ interface LineItem {
   quantity: number;
   unit_price: number;
   amount: number;
+  tax_rate: number;
   position: number;
 }
+
+const getDefaults = () => {
+  try {
+    return JSON.parse(localStorage.getItem('iq-defaults') || '{}');
+  } catch {
+    return {};
+  }
+};
 
 export default function InvoiceForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile: bizProfile } = useBusinessProfile();
+  const { balance: aiBalance, setBalance: setAiBalance } = useAiCredits();
   const isEdit = !!id;
+  const [aiBusy, setAiBusy] = useState(false);
+  const [publicToken, setPublicToken] = useState<string | null>(null);
 
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState('');
@@ -36,9 +52,11 @@ export default function InvoiceForm() {
   const [taxRate, setTaxRate] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
-  const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unit_price: 0, amount: 0, position: 0 }]);
+  const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unit_price: 0, amount: 0, tax_rate: 0, position: 0 }]);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [numberEdited, setNumberEdited] = useState(false);
 
   const sym = getCurrencySymbol(currency);
 
@@ -64,6 +82,7 @@ export default function InvoiceForm() {
           setTaxRate(Number(inv.tax_rate));
           setDiscount(Number(inv.discount));
           setNotes(inv.notes || '');
+          setPublicToken(inv.public_token || null);
         }
         if (itemsRes.data && itemsRes.data.length > 0) {
           setItems(itemsRes.data.map((i: any) => ({
@@ -72,16 +91,25 @@ export default function InvoiceForm() {
             quantity: Number(i.quantity),
             unit_price: Number(i.unit_price),
             amount: Number(i.amount),
+            tax_rate: Number(i.tax_rate) || 0,
             position: i.position,
           })));
         }
         setLoading(false);
       });
     } else {
-      const num = `INV-${Date.now().toString().slice(-6)}`;
-      setInvoiceNumber(num);
+      const defaults = getDefaults();
+      const prefix = defaults.invoicePrefix || 'INV-';
+      // Preview the next sequential number without consuming it; the real number
+      // is allocated atomically at save time. Fall back to a timestamp if RPC fails.
+      supabase.rpc('peek_invoice_number', { p_prefix: prefix }).then(({ data, error }: any) => {
+        setInvoiceNumber(!error && data ? data : `${prefix}${Date.now().toString().slice(-6)}`);
+      });
+      if (defaults.notes) setNotes(defaults.notes);
+      if (defaults.currency) setCurrency(defaults.currency);
+      if (defaults.taxRate) setTaxRate(Number(defaults.taxRate));
       const due = new Date();
-      due.setDate(due.getDate() + 30);
+      due.setDate(due.getDate() + (Number(defaults.paymentTerms) || 30));
       setDueDate(due.toISOString().split('T')[0]);
       setLoading(false);
     }
@@ -97,7 +125,7 @@ export default function InvoiceForm() {
   };
 
   const addItem = () => {
-    setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, amount: 0, position: prev.length }]);
+    setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, amount: 0, tax_rate: 0, position: prev.length }]);
   };
 
   const removeItem = (index: number) => {
@@ -105,8 +133,41 @@ export default function InvoiceForm() {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
+  // AI Writer: describe the project, get line items + notes auto-filled. Costs 1 credit.
+  const handleAiWrite = async () => {
+    const description = window.prompt('Describe the work / project, and AI will draft the line items:');
+    if (!description?.trim()) return;
+    setAiBusy(true);
+    try {
+      const { result, balance } = await callAi<{ line_items: Array<{ description: string; quantity: number; unit_price: number }>; notes?: string }>(
+        'invoice_writer',
+        { description, currency },
+      );
+      const newItems: LineItem[] = (result.line_items || []).map((li, i) => ({
+        description: li.description,
+        quantity: Number(li.quantity) || 1,
+        unit_price: Number(li.unit_price) || 0,
+        amount: (Number(li.quantity) || 1) * (Number(li.unit_price) || 0),
+        tax_rate: 0,
+        position: i,
+      }));
+      if (newItems.length > 0) setItems(newItems);
+      if (result.notes && !notes) setNotes(result.notes);
+      setAiBalance(balance);
+    } catch (err: any) {
+      if (err.message === 'insufficient_credits') {
+        alert('You are out of AI credits. Top up in Settings → AI Credits.');
+      } else {
+        alert(`AI failed: ${err.message}`);
+      }
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const subtotal = items.reduce((s, i) => s + i.amount, 0);
-  const taxAmount = subtotal * (taxRate / 100);
+  // Per-line-item tax; items with no explicit rate fall back to the invoice-level default.
+  const taxAmount = items.reduce((s, i) => s + i.amount * ((i.tax_rate > 0 ? i.tax_rate : taxRate) / 100), 0);
   const total = subtotal + taxAmount - discount;
 
   const handleSave = async (e: React.FormEvent) => {
@@ -114,10 +175,19 @@ export default function InvoiceForm() {
     if (!user) return;
     setSaving(true);
 
+    // For a new invoice, allocate a real gap-free sequential number unless the user
+    // typed a custom one. Edits keep their existing number.
+    let finalNumber = invoiceNumber;
+    if (!isEdit && !numberEdited) {
+      const prefix = getDefaults().invoicePrefix || 'INV-';
+      const { data: alloc } = await supabase.rpc('allocate_invoice_number', { p_prefix: prefix });
+      if (alloc) finalNumber = alloc;
+    }
+
     const invoiceData = {
       user_id: user.id,
       client_id: clientId || null,
-      invoice_number: invoiceNumber,
+      invoice_number: finalNumber,
       status,
       issue_date: issueDate,
       due_date: dueDate || null,
@@ -128,6 +198,7 @@ export default function InvoiceForm() {
       discount,
       total,
       notes: notes || null,
+      payment_link: primaryPaymentLink(bizProfile, total, currency),
     };
 
     let invoiceId = id;
@@ -146,11 +217,13 @@ export default function InvoiceForm() {
         quantity: item.quantity,
         unit_price: item.unit_price,
         amount: item.amount,
+        tax_rate: item.tax_rate || 0,
         position: i,
       }));
       await (supabase.from('invoice_items') as any).insert(itemsData);
     }
 
+    await logAudit(user.id, isEdit ? 'invoice.updated' : 'invoice.created', 'invoice', invoiceId, { invoice_number: finalNumber, total });
     setSaving(false);
     navigate('/app/invoices');
   };
@@ -178,7 +251,9 @@ export default function InvoiceForm() {
       img.src = url;
     });
 
-  const exportPDF = async () => {
+  // Build the branded invoice PDF and return the jsPDF doc.
+  // Shared by exportPDF (download) and handleSend (email attachment).
+  const buildPdf = async () => {
     const doc = new jsPDF();
     const client = clients.find(c => c.id === clientId);
     const s = sym;
@@ -288,17 +363,24 @@ export default function InvoiceForm() {
     // ---------- ITEMS TABLE ----------
     autoTable(doc, {
       startY: cy + 6,
-      head: [['Description', 'Qty', 'Unit Price', 'Amount']],
-      body: items.map(i => [i.description, String(i.quantity), `${s}${i.unit_price.toFixed(2)}`, `${s}${i.amount.toFixed(2)}`]),
+      head: [['Description', 'Qty', 'Unit Price', 'Tax', 'Amount']],
+      body: items.map(i => [
+        i.description,
+        String(i.quantity),
+        `${s}${i.unit_price.toFixed(2)}`,
+        `${i.tax_rate > 0 ? i.tax_rate : taxRate}%`,
+        `${s}${i.amount.toFixed(2)}`,
+      ]),
       theme: 'striped',
       styles: { fontSize: 9.5, cellPadding: 3, textColor: dark },
       headStyles: { fillColor: indigo, textColor: [255, 255, 255], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: {
         0: { halign: 'left' },
-        1: { halign: 'center', cellWidth: 20 },
-        2: { halign: 'right', cellWidth: 35 },
-        3: { halign: 'right', cellWidth: 35 },
+        1: { halign: 'center', cellWidth: 18 },
+        2: { halign: 'right', cellWidth: 32 },
+        3: { halign: 'center', cellWidth: 18 },
+        4: { halign: 'right', cellWidth: 32 },
       },
       margin: { left: margin, right: margin },
     });
@@ -315,7 +397,7 @@ export default function InvoiceForm() {
     doc.setFontSize(10);
     setText(gray);
     totalRow('Subtotal', `${s}${subtotal.toFixed(2)}`);
-    totalRow(`Tax (${taxRate}%)`, `${s}${taxAmount.toFixed(2)}`);
+    totalRow('Tax', `${s}${taxAmount.toFixed(2)}`);
     if (discount > 0) totalRow('Discount', `-${s}${discount.toFixed(2)}`);
 
     // Total highlighted band
@@ -351,7 +433,40 @@ export default function InvoiceForm() {
     setText(gray);
     doc.text('Thank you for your business!', pageW / 2, pageH - 13, { align: 'center' });
 
+    return doc;
+  };
+
+  const exportPDF = async () => {
+    const doc = await buildPdf();
     doc.save(`${invoiceNumber}.pdf`);
+  };
+
+  const handleSend = async () => {
+    if (!id) return;
+    const client = clients.find(c => c.id === clientId);
+    if (!client?.email) {
+      alert('This invoice has no client with an email address. Add a client email first.');
+      return;
+    }
+    setSending(true);
+    try {
+      const doc = await buildPdf();
+      // jsPDF datauristring → strip the "data:...;base64," prefix for Resend.
+      const pdfBase64 = doc.output('datauristring').split('base64,')[1];
+
+      const { data, error } = await supabase.functions.invoke('send-invoice', {
+        body: { invoice_id: id, pdf_base64: pdfBase64 },
+      });
+      if (error) throw error;
+
+      if (data?.status) setStatus(data.status);
+      if (user) await logAudit(user.id, 'invoice.sent', 'invoice', id, { to: client.email });
+      alert(`Invoice sent to ${client.email}.`);
+    } catch (err: any) {
+      alert(`Failed to send invoice: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -364,7 +479,19 @@ export default function InvoiceForm() {
           {isEdit && (
             <>
               <button onClick={exportPDF} className="btn btn-ghost"><Download size={18} /> PDF</button>
-              <button className="btn btn-ghost"><Send size={18} /> Send</button>
+              {publicToken && (
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/pay/${publicToken}`;
+                    navigator.clipboard.writeText(url);
+                    alert('Client link copied:\n' + url);
+                  }}
+                  className="btn btn-ghost"
+                ><Link2 size={18} /> Copy Link</button>
+              )}
+              <button onClick={handleSend} disabled={sending} className="btn btn-ghost">
+                <Send size={18} /> {sending ? 'Sending...' : 'Send'}
+              </button>
             </>
           )}
         </div>
@@ -394,7 +521,7 @@ export default function InvoiceForm() {
           <div className="form-grid-3">
             <div className="form-group">
               <label>Invoice Number</label>
-              <input type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+              <input type="text" value={invoiceNumber} onChange={e => { setInvoiceNumber(e.target.value); setNumberEdited(true); }} required />
             </div>
             <div className="form-group">
               <label>Client</label>
@@ -428,10 +555,16 @@ export default function InvoiceForm() {
         </div>
 
         <div className="card">
-          <h3>Line Items</h3>
+          <div className="card-header-row">
+            <h3>Line Items</h3>
+            <button type="button" onClick={handleAiWrite} disabled={aiBusy} className="btn btn-sm btn-ghost" title="Draft line items with AI (1 credit)">
+              <Sparkles size={16} /> {aiBusy ? 'Writing...' : 'AI Writer'}
+              {aiBalance !== null && <span className="text-sm text-secondary">&nbsp;({aiBalance} credits)</span>}
+            </button>
+          </div>
           <table className="table">
             <thead>
-              <tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th><th></th></tr>
+              <tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax %</th><th>Amount</th><th></th></tr>
             </thead>
             <tbody>
               {items.map((item, i) => (
@@ -439,6 +572,7 @@ export default function InvoiceForm() {
                   <td><input type="text" value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Item description" required /></td>
                   <td><input type="number" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 0)} min="0" step="any" className="input-sm" /></td>
                   <td><input type="number" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', parseFloat(e.target.value) || 0)} min="0" step="0.01" className="input-sm" /></td>
+                  <td><input type="number" value={item.tax_rate} onChange={e => updateItem(i, 'tax_rate', parseFloat(e.target.value) || 0)} min="0" step="0.1" className="input-sm" title="Leave 0 to use the invoice default tax rate" /></td>
                   <td className="font-medium">{formatMoney(item.amount, currency)}</td>
                   <td><button type="button" onClick={() => removeItem(i)} className="btn-icon danger"><Trash2 size={16} /></button></td>
                 </tr>
@@ -459,8 +593,8 @@ export default function InvoiceForm() {
             <div className="totals-section">
               <div className="total-row"><span>Subtotal</span><span>{formatMoney(subtotal, currency)}</span></div>
               <div className="total-row">
-                <span>Tax Rate (%)</span>
-                <input type="number" value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} min="0" step="0.1" className="input-sm" />
+                <span>Default Tax Rate (%)</span>
+                <input type="number" value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} min="0" step="0.1" className="input-sm" title="Used for line items with no per-item tax rate" />
               </div>
               <div className="total-row"><span>Tax Amount</span><span>{formatMoney(taxAmount, currency)}</span></div>
               <div className="total-row">
@@ -471,6 +605,26 @@ export default function InvoiceForm() {
             </div>
           </div>
         </div>
+
+        {(() => {
+          const opts = buildPaymentOptions(bizProfile, total, currency);
+          if (opts.length === 0 && !bizProfile?.payment_instructions) return null;
+          return (
+            <div className="card">
+              <h3>Payment Options</h3>
+              <p className="text-sm text-secondary">These are shown to your client on the invoice email and portal.</p>
+              {opts.map(o => (
+                <div key={o.label} className="total-row">
+                  <span>{o.label}</span>
+                  <a href={o.url} target="_blank" rel="noreferrer">{o.url}</a>
+                </div>
+              ))}
+              {bizProfile?.payment_instructions && (
+                <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{bizProfile.payment_instructions}</p>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="form-actions">
           <button type="button" onClick={() => navigate('/app/invoices')} className="btn btn-ghost">Cancel</button>

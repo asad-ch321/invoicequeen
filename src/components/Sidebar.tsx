@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Users, RefreshCw, CreditCard,
-  BarChart3, Settings, LogOut, Crown, Moon, Sun
+  BarChart3, Settings, LogOut, Crown, Moon, Sun, Receipt, FileSignature, Wallet
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,9 +9,12 @@ import { useTheme } from '../contexts/ThemeContext';
 const links = [
   { to: '/app', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/app/invoices', icon: FileText, label: 'Invoices' },
+  { to: '/app/estimates', icon: FileSignature, label: 'Estimates' },
   { to: '/app/clients', icon: Users, label: 'Clients' },
   { to: '/app/recurring', icon: RefreshCw, label: 'Recurring' },
   { to: '/app/payments', icon: CreditCard, label: 'Payments' },
+  { to: '/app/credit-notes', icon: Receipt, label: 'Credit Notes' },
+  { to: '/app/expenses', icon: Wallet, label: 'Expenses' },
   { to: '/app/reports', icon: BarChart3, label: 'Reports' },
   { to: '/app/settings', icon: Settings, label: 'Settings' },
 ];

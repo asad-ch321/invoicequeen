@@ -10,11 +10,15 @@ export function useBusinessProfile() {
 
   const fetchProfile = async () => {
     if (!user) { setLoading(false); return; }
+    // A user may now have multiple profiles — use the default (or most recent).
     const { data } = await supabase
       .from('business_profiles')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
     setProfile(data as BusinessProfile | null);
     setLoading(false);
   };

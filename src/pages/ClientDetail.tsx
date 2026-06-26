@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, Building, MapPin } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building, MapPin, FileDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StatusBadge from '../components/StatusBadge';
 import { formatMoney } from '../lib/currencies';
+import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import type { Client, Invoice } from '../types/database';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -12,6 +15,7 @@ export default function ClientDetail() {
   const [client, setClient] = useState<Client | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const { profile: biz } = useBusinessProfile();
 
   useEffect(() => {
     if (!id) return;
@@ -30,10 +34,65 @@ export default function ClientDetail() {
 
   const totalBilled = invoices.reduce((s, i) => s + Number(i.total), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.total), 0);
+  const outstanding = totalBilled - totalPaid;
+
+  // Account statement: a one-page PDF ledger of all the client's invoices.
+  const exportStatement = () => {
+    if (!client) return;
+    const doc = new jsPDF();
+    const margin = 15;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(30, 41, 59);
+    doc.text('STATEMENT OF ACCOUNT', margin, 22);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    let y = 32;
+    if (biz?.business_name) { doc.text(biz.business_name, margin, y); y += 5; }
+    doc.text(`Statement for: ${client.name}`, margin, y); y += 5;
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, margin, y);
+
+    autoTable(doc, {
+      startY: y + 8,
+      head: [['Invoice', 'Issued', 'Due', 'Status', 'Amount']],
+      body: invoices.map(i => [
+        i.invoice_number,
+        i.issue_date,
+        i.due_date || '—',
+        i.status,
+        `${i.currency} ${Number(i.total).toFixed(2)}`,
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255] },
+      styles: { fontSize: 9.5, cellPadding: 3 },
+      margin: { left: margin, right: margin },
+    });
+
+    let ty = ((doc as any).lastAutoTable?.finalY || y + 20) + 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139);
+    const row = (label: string, value: string) => { doc.text(label, 130, ty); doc.text(value, 195, ty, { align: 'right' }); ty += 6; };
+    row('Total Billed', formatMoney(totalBilled, 'USD'));
+    row('Total Paid', formatMoney(totalPaid, 'USD'));
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    row('Outstanding', formatMoney(outstanding, 'USD'));
+
+    doc.save(`Statement-${client.name.replace(/\s+/g, '_')}.pdf`);
+  };
 
   return (
     <div className="page">
-      <button onClick={() => navigate('/app/clients')} className="btn btn-ghost mb-4"><ArrowLeft size={18} /> Back to Clients</button>
+      <div className="page-header">
+        <button onClick={() => navigate('/app/clients')} className="btn btn-ghost"><ArrowLeft size={18} /> Back to Clients</button>
+        {invoices.length > 0 && (
+          <button onClick={exportStatement} className="btn btn-ghost"><FileDown size={18} /> Statement PDF</button>
+        )}
+      </div>
 
       <div className="two-col-grid">
         <div className="card">

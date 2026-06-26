@@ -28,6 +28,12 @@ export interface Invoice {
   notes: string | null;
   payment_link: string | null;
   paid_at: string | null;
+  last_sent_at: string | null;
+  sent_count: number;
+  last_reminder_at: string | null;
+  reminder_count: number;
+  late_fee_amount: number;
+  public_token: string;
   created_at: string;
   updated_at: string;
   client?: Client;
@@ -40,7 +46,24 @@ export interface InvoiceItem {
   quantity: number;
   unit_price: number;
   amount: number;
+  tax_rate: number;
   position: number;
+}
+
+export interface CreditNote {
+  id: string;
+  user_id: string;
+  invoice_id: string | null;
+  client_id: string | null;
+  credit_number: string;
+  currency: string;
+  amount: number;
+  reason: string | null;
+  status: 'issued' | 'refunded' | 'void';
+  issue_date: string;
+  created_at: string;
+  updated_at: string;
+  client?: Client;
 }
 
 export interface RecurringInvoice {
@@ -61,6 +84,47 @@ export interface RecurringInvoice {
   client?: Client;
 }
 
+export interface EstimateLineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface Estimate {
+  id: string;
+  user_id: string;
+  client_id: string | null;
+  estimate_number: string;
+  status: 'draft' | 'sent' | 'accepted' | 'declined' | 'converted';
+  issue_date: string;
+  valid_until: string | null;
+  currency: string;
+  line_items: EstimateLineItem[];
+  tax_rate: number;
+  discount: number;
+  total: number;
+  notes: string | null;
+  signature_name: string | null;
+  signed_at: string | null;
+  converted_invoice_id: string | null;
+  public_token: string;
+  created_at: string;
+  updated_at: string;
+  client?: Client;
+}
+
+export interface Expense {
+  id: string;
+  user_id: string;
+  expense_date: string;
+  category: string | null;
+  vendor: string | null;
+  amount: number;
+  currency: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface BusinessProfile {
   id: string;
   user_id: string;
@@ -69,7 +133,24 @@ export interface BusinessProfile {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  late_fee_enabled: boolean;
+  late_fee_percent: number;
+  late_fee_grace_days: number;
+  reminder_enabled: boolean;
+  paypal_me: string | null;
+  stripe_payment_link: string | null;
+  payment_instructions: string | null;
+  profile_name: string | null;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface TeamMember {
+  id: string;
+  owner_id: string;
+  email: string;
+  role: 'admin' | 'editor' | 'viewer';
+  created_at: string;
 }
 
