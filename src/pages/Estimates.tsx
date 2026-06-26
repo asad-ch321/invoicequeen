@@ -199,7 +199,11 @@ export default function Estimates() {
                     <td>{formatMoney(Number(est.total), est.currency)}</td>
                     <td>
                       <span className={`badge ${est.status === 'accepted' || est.status === 'converted' ? 'badge-paid' : est.status === 'declined' ? 'badge-overdue' : 'badge-unpaid'}`}>{est.status}</span>
-                      {est.signed_at && <FileCheck size={14} title={`Signed by ${est.signature_name}`} style={{ marginLeft: 4, verticalAlign: 'middle' }} />}
+                      {est.signed_at && (
+                        <span title={`Signed by ${est.signature_name}`} style={{ marginLeft: 4, verticalAlign: 'middle', display: 'inline-flex' }}>
+                          <FileCheck size={14} />
+                        </span>
+                      )}
                     </td>
                     <td>
                       <div className="flex gap-2">
