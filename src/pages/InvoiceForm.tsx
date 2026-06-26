@@ -40,6 +40,8 @@ export default function InvoiceForm() {
   const { balance: aiBalance, setBalance: setAiBalance } = useAiCredits();
   const isEdit = !!id;
   const [aiBusy, setAiBusy] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiDescription, setAiDescription] = useState('');
   const [publicToken, setPublicToken] = useState<string | null>(null);
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -135,8 +137,8 @@ export default function InvoiceForm() {
 
   // AI Writer: describe the project, get line items + notes auto-filled. Costs 1 credit.
   const handleAiWrite = async () => {
-    const description = window.prompt('Describe the work / project, and AI will draft the line items:');
-    if (!description?.trim()) return;
+    const description = aiDescription.trim();
+    if (!description) return;
     setAiBusy(true);
     try {
       const { result, balance } = await callAi<{ line_items: Array<{ description: string; quantity: number; unit_price: number }>; notes?: string }>(
@@ -154,6 +156,8 @@ export default function InvoiceForm() {
       if (newItems.length > 0) setItems(newItems);
       if (result.notes && !notes) setNotes(result.notes);
       setAiBalance(balance);
+      setAiModalOpen(false);
+      setAiDescription('');
     } catch (err: any) {
       if (err.message === 'insufficient_credits') {
         alert('You are out of AI credits. Top up in Settings → AI Credits.');
@@ -557,8 +561,8 @@ export default function InvoiceForm() {
         <div className="card">
           <div className="card-header-row">
             <h3>Line Items</h3>
-            <button type="button" onClick={handleAiWrite} disabled={aiBusy} className="btn btn-sm btn-ghost" title="Draft line items with AI (1 credit)">
-              <Sparkles size={16} /> {aiBusy ? 'Writing...' : 'AI Writer'}
+            <button type="button" onClick={() => setAiModalOpen(true)} className="btn btn-sm btn-ghost" title="Draft line items with AI (1 credit)">
+              <Sparkles size={16} /> AI Writer
               {aiBalance !== null && <span className="text-sm text-secondary">&nbsp;({aiBalance} credits)</span>}
             </button>
           </div>
@@ -633,6 +637,30 @@ export default function InvoiceForm() {
           </button>
         </div>
       </form>
+
+      {aiModalOpen && (
+        <div className="modal-overlay" onClick={() => !aiBusy && setAiModalOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3><Sparkles size={18} /> AI Invoice Writer</h3>
+            <p className="text-sm text-secondary">Describe the work or project. AI will draft the line items for you. Costs 1 credit.</p>
+            <div className="form-group">
+              <textarea
+                value={aiDescription}
+                onChange={e => setAiDescription(e.target.value)}
+                rows={5}
+                autoFocus
+                placeholder="e.g. Built a 5-page WordPress site with custom theme, 3 rounds of revisions, and 1 month of support."
+              />
+            </div>
+            <div className="form-actions">
+              <button type="button" onClick={() => setAiModalOpen(false)} disabled={aiBusy} className="btn btn-ghost">Cancel</button>
+              <button type="button" onClick={handleAiWrite} disabled={aiBusy || !aiDescription.trim()} className="btn btn-primary">
+                <Sparkles size={16} /> {aiBusy ? 'Writing...' : 'Generate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

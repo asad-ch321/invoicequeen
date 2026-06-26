@@ -17,9 +17,11 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [business, setBusiness] = useState({
-    business_name: '', email: '', phone: '', address: '',
+    profile_name: '', business_name: '', email: '', phone: '', address: '',
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  // Which profile the Business Profile form is currently editing.
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
 
   const [reminders, setReminders] = useState({
     reminder_enabled: false,
@@ -54,12 +56,58 @@ export default function Settings() {
     await (supabase.from('business_profiles') as any).update({ is_default: true }).eq('id', pid);
     loadProfiles(); refetch();
   };
+  // Load a profile row into the Business Profile form.
+  const loadProfileIntoForm = (p: any) => {
+    setBusiness({
+      profile_name: p.profile_name || '',
+      business_name: p.business_name || '',
+      email: p.email || '',
+      phone: p.phone || '',
+      address: p.address || '',
+    });
+    setLogoUrl(p.logo_url || null);
+    setReminders({
+      reminder_enabled: p.reminder_enabled ?? false,
+      late_fee_enabled: p.late_fee_enabled ?? false,
+      late_fee_percent: Number(p.late_fee_percent) || 0,
+      late_fee_grace_days: Number(p.late_fee_grace_days) || 0,
+    });
+    setPayments({
+      paypal_me: p.paypal_me || '',
+      stripe_payment_link: p.stripe_payment_link || '',
+      payment_instructions: p.payment_instructions || '',
+    });
+  };
+
+  // Create a new blank profile in-app (no browser prompt) and open it for editing.
   const addProfile = async () => {
     if (!user) return;
-    const name = window.prompt('Name for the new business profile:');
-    if (!name?.trim()) return;
-    await (supabase.from('business_profiles') as any).insert({ user_id: user.id, business_name: name.trim(), profile_name: name.trim(), is_default: false });
-    loadProfiles();
+    const isFirst = profiles.length === 0;
+    const { data } = await (supabase.from('business_profiles') as any)
+      .insert({ user_id: user.id, business_name: 'New Business', profile_name: 'New Business', is_default: isFirst })
+      .select('*')
+      .single();
+    await loadProfiles();
+    if (data) {
+      setEditingProfileId(data.id);
+      loadProfileIntoForm(data);
+      setActiveTab('business');
+    }
+  };
+
+  // Open an existing profile in the Business Profile form.
+  const editProfile = (p: any) => {
+    setEditingProfileId(p.id);
+    loadProfileIntoForm(p);
+    setActiveTab('business');
+  };
+
+  const deleteProfile = async (pid: string) => {
+    if (!confirm('Delete this business profile?')) return;
+    await supabase.from('business_profiles').delete().eq('id', pid);
+    if (editingProfileId === pid) setEditingProfileId(null);
+    await loadProfiles();
+    refetch();
   };
   const addMember = async () => {
     if (!user || !newMember.email.trim()) return;
@@ -79,29 +127,17 @@ export default function Settings() {
     };
   });
 
-  // Pre-fill form when profile loads
+  // Once profiles load, default to editing the default profile (or the first one).
   useEffect(() => {
-    if (profile) {
-      setBusiness({
-        business_name: profile.business_name || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-      });
-      setLogoUrl(profile.logo_url);
-      setReminders({
-        reminder_enabled: profile.reminder_enabled ?? false,
-        late_fee_enabled: profile.late_fee_enabled ?? false,
-        late_fee_percent: Number(profile.late_fee_percent) || 0,
-        late_fee_grace_days: Number(profile.late_fee_grace_days) || 0,
-      });
-      setPayments({
-        paypal_me: profile.paypal_me || '',
-        stripe_payment_link: profile.stripe_payment_link || '',
-        payment_instructions: profile.payment_instructions || '',
-      });
+    if (profiles.length === 0) return;
+    const target = editingProfileId
+      ? profiles.find(p => p.id === editingProfileId)
+      : (profiles.find(p => p.is_default) || profiles[0]);
+    if (target) {
+      if (!editingProfileId) setEditingProfileId(target.id);
+      loadProfileIntoForm(target);
     }
-  }, [profile]);
+  }, [profiles]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,12 +147,14 @@ export default function Settings() {
 
     setUploading(true);
     const ext = file.name.split('.').pop() || 'png';
-    const filePath = `${user.id}/logo.${ext}`;
+    // Per-profile folder so multiple profiles keep separate logos.
+    const folder = `${user.id}/${editingProfileId || 'default'}`;
+    const filePath = `${folder}/logo.${ext}`;
 
     // Remove old logo if exists (different extension)
-    const { data: existing } = await supabase.storage.from('logos').list(user.id);
+    const { data: existing } = await supabase.storage.from('logos').list(folder);
     if (existing && existing.length > 0) {
-      await supabase.storage.from('logos').remove(existing.map(f => `${user.id}/${f.name}`));
+      await supabase.storage.from('logos').remove(existing.map(f => `${folder}/${f.name}`));
     }
 
     const { error } = await supabase.storage.from('logos').upload(filePath, file, { upsert: true });
@@ -130,9 +168,10 @@ export default function Settings() {
 
   const handleRemoveLogo = async () => {
     if (!user) return;
-    const { data: existing } = await supabase.storage.from('logos').list(user.id);
+    const folder = `${user.id}/${editingProfileId || 'default'}`;
+    const { data: existing } = await supabase.storage.from('logos').list(folder);
     if (existing && existing.length > 0) {
-      await supabase.storage.from('logos').remove(existing.map(f => `${user.id}/${f.name}`));
+      await supabase.storage.from('logos').remove(existing.map(f => `${folder}/${f.name}`));
     }
     setLogoUrl(null);
   };
@@ -143,6 +182,7 @@ export default function Settings() {
 
     const payload = {
       user_id: user.id,
+      profile_name: business.profile_name || business.business_name || null,
       business_name: business.business_name,
       email: business.email || null,
       phone: business.phone || null,
@@ -158,14 +198,18 @@ export default function Settings() {
       updated_at: new Date().toISOString(),
     };
 
-    if (profile) {
-      await (supabase.from('business_profiles') as any).update(payload).eq('id', profile.id);
+    const targetId = editingProfileId || profile?.id;
+    if (targetId) {
+      await (supabase.from('business_profiles') as any).update(payload).eq('id', targetId);
     } else {
-      await (supabase.from('business_profiles') as any).insert(payload);
+      // First-ever profile.
+      const { data } = await (supabase.from('business_profiles') as any).insert({ ...payload, is_default: true }).select('id').single();
+      if (data) setEditingProfileId(data.id);
     }
 
     setSaving(false);
     setSaved(true);
+    await loadProfiles();
     refetch();
     setTimeout(() => setSaved(false), 2000);
   };
@@ -209,7 +253,7 @@ export default function Settings() {
       {activeTab === 'business' && (
         <div className="card">
           <div className="card-header-row">
-            <h3>Business Profile</h3>
+            <h3>Business Profile{business.profile_name ? ` — ${business.profile_name}` : ''}</h3>
             <Building size={20} className="text-secondary" />
           </div>
 
@@ -250,6 +294,10 @@ export default function Settings() {
           </div>
 
           <div className="form-grid-2">
+            <div className="form-group">
+              <label>Profile Label</label>
+              <input type="text" value={business.profile_name} onChange={e => setBusiness({ ...business, profile_name: e.target.value })} placeholder="e.g. Main Business (internal name)" />
+            </div>
             <div className="form-group">
               <label>Business Name *</label>
               <input type="text" value={business.business_name} onChange={e => setBusiness({ ...business, business_name: e.target.value })} placeholder="Your Business Name" required />
@@ -426,19 +474,28 @@ export default function Settings() {
             <h3>Business Profiles</h3>
             <button onClick={addProfile} className="btn btn-sm btn-primary"><Save size={16} /> Add Profile</button>
           </div>
-          <p className="text-sm text-secondary">Run multiple businesses from one account. The default profile is used on new invoices; edit its details in the Business Profile tab.</p>
-          <table className="table" style={{ marginTop: 12 }}>
-            <thead><tr><th>Name</th><th>Default</th><th></th></tr></thead>
-            <tbody>
-              {profiles.map(p => (
-                <tr key={p.id}>
-                  <td className="font-medium">{p.profile_name || p.business_name}</td>
-                  <td>{p.is_default ? <span className="badge badge-paid">Default</span> : <button onClick={() => setDefaultProfile(p.id)} className="btn btn-sm btn-ghost">Set Default</button>}</td>
-                  <td />
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p className="text-sm text-secondary">Run multiple businesses from one account, each with its own logo, details, and payment options. The default profile is used on new invoices.</p>
+          {profiles.length === 0 ? (
+            <p className="empty-text">No profiles yet. Click "Add Profile" to create one.</p>
+          ) : (
+            <table className="table" style={{ marginTop: 12 }}>
+              <thead><tr><th>Name</th><th>Default</th><th></th></tr></thead>
+              <tbody>
+                {profiles.map(p => (
+                  <tr key={p.id}>
+                    <td className="font-medium">{p.profile_name || p.business_name}</td>
+                    <td>{p.is_default ? <span className="badge badge-paid">Default</span> : <button onClick={() => setDefaultProfile(p.id)} className="btn btn-sm btn-ghost">Set Default</button>}</td>
+                    <td>
+                      <div className="flex gap-2">
+                        <button onClick={() => editProfile(p)} className="btn btn-sm btn-ghost">Edit</button>
+                        {!p.is_default && <button onClick={() => deleteProfile(p.id)} className="btn-icon danger"><Trash2 size={16} /></button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
