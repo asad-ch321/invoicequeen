@@ -366,6 +366,23 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+/* Checkboxes / radios must not inherit the full-width text-field styling above. */
+.form-group input[type="checkbox"],
+.form-group input[type="radio"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  border: initial;
+  border-radius: initial;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.form-group label.flex {
+  cursor: pointer;
+}
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
