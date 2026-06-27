@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Plus, Play, Pause, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import type { Client, RecurringInvoice } from '../types/database';
 
 export default function RecurringInvoices() {
   const { user } = useAuth();
+  const { confirm } = useToast();
   const [templates, setTemplates] = useState<(RecurringInvoice & { client?: Client })[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function RecurringInvoices() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this recurring template?')) return;
+    if (!(await confirm('Delete this recurring template?'))) return;
     await supabase.from('recurring_invoices').delete().eq('id', id);
     fetchData();
   };

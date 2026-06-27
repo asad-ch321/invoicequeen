@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, RotateCcw, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { formatMoney } from '../lib/currencies';
 import CurrencySelect from '../components/CurrencySelect';
 import type { CreditNote, Client, Invoice } from '../types/database';
 
 export default function CreditNotes() {
   const { user } = useAuth();
+  const { confirm } = useToast();
   const [notes, setNotes] = useState<CreditNote[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -73,7 +75,7 @@ export default function CreditNotes() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this credit note?')) return;
+    if (!(await confirm('Delete this credit note?'))) return;
     await supabase.from('credit_notes').delete().eq('id', id);
     load();
   };

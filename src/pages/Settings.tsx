@@ -4,12 +4,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
+import { useToast } from '../contexts/ToastContext';
 import CurrencySelect from '../components/CurrencySelect';
 
 export default function Settings() {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetch } = useBusinessProfile();
   const { balance: aiBalance } = useAiCredits();
+  const { toast, confirm } = useToast();
   const [activeTab, setActiveTab] = useState('business');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -103,7 +105,7 @@ export default function Settings() {
   };
 
   const deleteProfile = async (pid: string) => {
-    if (!confirm('Delete this business profile?')) return;
+    if (!(await confirm('Delete this business profile?'))) return;
     await supabase.from('business_profiles').delete().eq('id', pid);
     if (editingProfileId === pid) setEditingProfileId(null);
     await loadProfiles();
@@ -142,8 +144,8 @@ export default function Settings() {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
-    if (file.size > 2 * 1024 * 1024) { alert('Logo must be under 2MB.'); return; }
+    if (!file.type.startsWith('image/')) { toast('Please select an image file.', 'error'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast('Logo must be under 2MB.', 'error'); return; }
 
     setUploading(true);
     const ext = file.name.split('.').pop() || 'png';
@@ -158,7 +160,7 @@ export default function Settings() {
     }
 
     const { error } = await supabase.storage.from('logos').upload(filePath, file, { upsert: true });
-    if (error) { alert('Upload failed: ' + error.message); setUploading(false); return; }
+    if (error) { toast('Upload failed: ' + error.message, 'error'); setUploading(false); return; }
 
     const { data: urlData } = supabase.storage.from('logos').getPublicUrl(filePath);
     // Append cache-buster so browsers pick up new logo
@@ -541,7 +543,7 @@ export default function Settings() {
           <div className="form-actions">
             <button
               className="btn btn-primary"
-              onClick={() => alert('Credit purchase checkout coming soon. For now, credits can be granted from the admin dashboard.')}
+              onClick={() => toast('Credit purchase checkout coming soon. For now, credits can be granted from the admin dashboard.', 'info')}
             >
               Buy Credits
             </button>

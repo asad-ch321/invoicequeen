@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, FileCheck, Link2, ArrowRightCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { formatMoney } from '../lib/currencies';
 import CurrencySelect from '../components/CurrencySelect';
 import type { Estimate, Client, EstimateLineItem } from '../types/database';
@@ -10,6 +11,7 @@ const blankItem = (): EstimateLineItem => ({ description: '', quantity: 1, unit_
 
 export default function Estimates() {
   const { user } = useAuth();
+  const { toast, confirm } = useToast();
   const [estimates, setEstimates] = useState<Estimate[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function Estimates() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this estimate?')) return;
+    if (!(await confirm('Delete this estimate?'))) return;
     await supabase.from('estimates').delete().eq('id', id);
     load();
   };
@@ -121,7 +123,7 @@ export default function Estimates() {
         })),
       );
       await (supabase.from('estimates') as any).update({ status: 'converted', converted_invoice_id: inv.id }).eq('id', est.id);
-      alert('Estimate converted to invoice ' + (num || ''));
+      toast('Estimate converted to invoice ' + (num || ''), 'success');
       load();
     }
   };
@@ -207,7 +209,7 @@ export default function Estimates() {
                     </td>
                     <td>
                       <div className="flex gap-2">
-                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.public_token}`); alert('Estimate link copied'); }} className="btn-icon" title="Copy client link"><Link2 size={16} /></button>
+                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.public_token}`); toast('Estimate link copied', 'success'); }} className="btn-icon" title="Copy client link"><Link2 size={16} /></button>
                         {est.status !== 'converted' && <button onClick={() => convert(est)} className="btn-icon" title="Convert to invoice"><ArrowRightCircle size={16} /></button>}
                         {est.status === 'draft' && <button onClick={() => setStatus(est, 'sent')} className="btn-icon" title="Mark sent">→</button>}
                         <button onClick={() => remove(est.id)} className="btn-icon danger" title="Delete"><Trash2 size={16} /></button>

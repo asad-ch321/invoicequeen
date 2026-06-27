@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Plus, Trash2, Download, Send, Sparkles, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { getCurrencySymbol, formatMoney } from '../lib/currencies';
 import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
@@ -36,6 +37,7 @@ export default function InvoiceForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { profile: bizProfile } = useBusinessProfile();
   const { balance: aiBalance, setBalance: setAiBalance } = useAiCredits();
   const isEdit = !!id;
@@ -160,9 +162,9 @@ export default function InvoiceForm() {
       setAiDescription('');
     } catch (err: any) {
       if (err.message === 'insufficient_credits') {
-        alert('You are out of AI credits. Top up in Settings → AI Credits.');
+        toast('You are out of AI credits. Top up in Settings → AI Credits.', 'error');
       } else {
-        alert(`AI failed: ${err.message}`);
+        toast(`AI failed: ${err.message}`, 'error');
       }
     } finally {
       setAiBusy(false);
@@ -449,7 +451,7 @@ export default function InvoiceForm() {
     if (!id) return;
     const client = clients.find(c => c.id === clientId);
     if (!client?.email) {
-      alert('This invoice has no client with an email address. Add a client email first.');
+      toast('This invoice has no client with an email address. Add a client email first.', 'error');
       return;
     }
     setSending(true);
@@ -473,9 +475,9 @@ export default function InvoiceForm() {
 
       if (data?.status) setStatus(data.status);
       if (user) await logAudit(user.id, 'invoice.sent', 'invoice', id, { to: client.email });
-      alert(`Invoice sent to ${client.email}.`);
+      toast(`Invoice sent to ${client.email}`, 'success');
     } catch (err: any) {
-      alert(`Failed to send invoice: ${err?.message || 'Unknown error'}`);
+      toast(`Failed to send invoice: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setSending(false);
     }
@@ -496,7 +498,7 @@ export default function InvoiceForm() {
                   onClick={() => {
                     const url = `${window.location.origin}/pay/${publicToken}`;
                     navigator.clipboard.writeText(url);
-                    alert('Client link copied:\n' + url);
+                    toast('Client payment link copied', 'success');
                   }}
                   className="btn btn-ghost"
                 ><Link2 size={18} /> Copy Link</button>

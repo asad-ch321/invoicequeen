@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import type { Client } from '../types/database';
 
 export default function Clients() {
   const { user } = useAuth();
+  const { confirm } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function Clients() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client?')) return;
+    if (!(await confirm('Are you sure you want to delete this client?'))) return;
     await supabase.from('clients').delete().eq('id', id);
     fetchClients();
   };
