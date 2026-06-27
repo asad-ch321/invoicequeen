@@ -913,3 +913,17 @@ body {
 @media (max-width: 600px) {
   .toast-stack { left: 16px; right: 16px; bottom: 16px; max-width: none; }
 }
+
+/* ---------- Confirm dialog ---------- */
+.confirm-modal {
+  width: auto;
+  max-width: 400px;
+  min-width: 320px;
+  padding: 24px;
+}
+.confirm-modal h3 { font-size: 17px; font-weight: 700; }
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

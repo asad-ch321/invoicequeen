@@ -51,9 +51,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {confirmState && (
         <div className="modal-overlay" onClick={() => closeConfirm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <p style={{ marginTop: 0, fontSize: 15 }}>{confirmState.message}</p>
-            <div className="form-actions">
+          <div className="modal confirm-modal" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 8 }}>Please confirm</h3>
+            <p style={{ margin: '0 0 22px', fontSize: 14, color: 'var(--text-secondary)' }}>{confirmState.message}</p>
+            <div className="confirm-actions">
               <button className="btn btn-ghost" onClick={() => closeConfirm(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={() => closeConfirm(true)}>Confirm</button>
             </div>
