@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
 
   if (!resendRes.ok) {
     const detail = await resendRes.text();
+    console.error('Resend send failed', resendRes.status, 'from=', RESEND_FROM, 'to=', client.email, 'detail=', detail);
     return json({ error: 'Failed to send email', detail }, 502);
   }
 

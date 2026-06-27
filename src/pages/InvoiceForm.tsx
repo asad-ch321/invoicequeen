@@ -461,7 +461,15 @@ export default function InvoiceForm() {
       const { data, error } = await supabase.functions.invoke('send-invoice', {
         body: { invoice_id: id, pdf_base64: pdfBase64 },
       });
-      if (error) throw error;
+      if (error) {
+        // Surface the function's JSON body (error + Resend detail) instead of the generic message.
+        let msg = error.message;
+        try {
+          const body = await (error as any).context?.json?.();
+          if (body?.error) msg = body.detail ? `${body.error} — ${body.detail}` : body.error;
+        } catch { /* keep generic message */ }
+        throw new Error(msg);
+      }
 
       if (data?.status) setStatus(data.status);
       if (user) await logAudit(user.id, 'invoice.sent', 'invoice', id, { to: client.email });
