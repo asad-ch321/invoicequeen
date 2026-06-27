@@ -82,11 +82,14 @@ export default function Settings() {
   };
 
   // Create a new blank profile in-app (no browser prompt) and open it for editing.
+  // Business name is left empty so the form shows placeholders for the user to fill;
+  // the label gets a friendly auto number just so the switcher pill is distinguishable.
   const addProfile = async () => {
     if (!user) return;
     const isFirst = profiles.length === 0;
+    const label = `Business ${profiles.length + 1}`;
     const { data } = await (supabase.from('business_profiles') as any)
-      .insert({ user_id: user.id, business_name: 'New Business', profile_name: 'New Business', is_default: isFirst })
+      .insert({ user_id: user.id, business_name: '', profile_name: label, is_default: isFirst })
       .select('*')
       .single();
     await loadProfiles();
@@ -273,15 +276,12 @@ export default function Settings() {
 
           <div className="card-header-row">
             <h3>{business.profile_name || business.business_name || 'Business Profile'}</h3>
-            <div className="flex gap-2">
-              {editingProfileId && !profiles.find(p => p.id === editingProfileId)?.is_default && (
-                <>
-                  <button type="button" onClick={() => setDefaultProfile(editingProfileId)} className="btn btn-sm btn-ghost">Set Default</button>
-                  <button type="button" onClick={() => deleteProfile(editingProfileId)} className="btn-icon danger" title="Delete profile"><Trash2 size={16} /></button>
-                </>
-              )}
-              <Building size={20} className="text-secondary" />
-            </div>
+            {editingProfileId && !profiles.find(p => p.id === editingProfileId)?.is_default && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setDefaultProfile(editingProfileId)} className="btn btn-sm btn-ghost">Set Default</button>
+                <button type="button" onClick={() => deleteProfile(editingProfileId)} className="btn-icon danger" title="Delete profile"><Trash2 size={16} /></button>
+              </div>
+            )}
           </div>
 
           {/* Logo Upload */}
