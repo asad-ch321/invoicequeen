@@ -225,7 +225,6 @@ export default function Settings() {
     { id: 'defaults', label: 'Invoice Defaults' },
     { id: 'payments', label: 'Payments' },
     { id: 'reminders', label: 'Reminders & Late Fees' },
-    { id: 'profiles', label: 'Business Profiles' },
     { id: 'team', label: 'Team' },
     { id: 'ai', label: 'AI Credits' },
     { id: 'templates', label: 'Templates' },
@@ -252,9 +251,35 @@ export default function Settings() {
 
       {activeTab === 'business' && (
         <div className="card">
+          {/* Profile switcher — pick which business to edit, or add another */}
+          {profiles.length > 0 && (
+            <div className="profile-switcher" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              {profiles.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => editProfile(p)}
+                  className={`btn btn-sm ${editingProfileId === p.id ? 'btn-primary' : 'btn-ghost'}`}
+                >
+                  {p.profile_name || p.business_name}
+                  {p.is_default && <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.85 }}>★</span>}
+                </button>
+              ))}
+              <button type="button" onClick={addProfile} className="btn btn-sm btn-ghost"><Building size={14} /> Add Business</button>
+            </div>
+          )}
+
           <div className="card-header-row">
-            <h3>Business Profile{business.profile_name ? ` — ${business.profile_name}` : ''}</h3>
-            <Building size={20} className="text-secondary" />
+            <h3>{business.profile_name || business.business_name || 'Business Profile'}</h3>
+            <div className="flex gap-2">
+              {editingProfileId && !profiles.find(p => p.id === editingProfileId)?.is_default && (
+                <>
+                  <button type="button" onClick={() => setDefaultProfile(editingProfileId)} className="btn btn-sm btn-ghost">Set Default</button>
+                  <button type="button" onClick={() => deleteProfile(editingProfileId)} className="btn-icon danger" title="Delete profile"><Trash2 size={16} /></button>
+                </>
+              )}
+              <Building size={20} className="text-secondary" />
+            </div>
           </div>
 
           {/* Logo Upload */}
@@ -464,37 +489,6 @@ export default function Settings() {
           </div>
           {!business.business_name && (
             <p className="text-sm text-secondary">Set up your Business Profile first to enable these settings.</p>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'profiles' && (
-        <div className="card">
-          <div className="card-header-row">
-            <h3>Business Profiles</h3>
-            <button onClick={addProfile} className="btn btn-sm btn-primary"><Save size={16} /> Add Profile</button>
-          </div>
-          <p className="text-sm text-secondary">Run multiple businesses from one account, each with its own logo, details, and payment options. The default profile is used on new invoices.</p>
-          {profiles.length === 0 ? (
-            <p className="empty-text">No profiles yet. Click "Add Profile" to create one.</p>
-          ) : (
-            <table className="table" style={{ marginTop: 12 }}>
-              <thead><tr><th>Name</th><th>Default</th><th></th></tr></thead>
-              <tbody>
-                {profiles.map(p => (
-                  <tr key={p.id}>
-                    <td className="font-medium">{p.profile_name || p.business_name}</td>
-                    <td>{p.is_default ? <span className="badge badge-paid">Default</span> : <button onClick={() => setDefaultProfile(p.id)} className="btn btn-sm btn-ghost">Set Default</button>}</td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button onClick={() => editProfile(p)} className="btn btn-sm btn-ghost">Edit</button>
-                        {!p.is_default && <button onClick={() => deleteProfile(p.id)} className="btn-icon danger"><Trash2 size={16} /></button>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
         </div>
       )}
