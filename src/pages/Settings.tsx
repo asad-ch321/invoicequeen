@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
 import { useToast } from '../contexts/ToastContext';
+import { TEMPLATES, rgbCss } from '../lib/templates';
 import CurrencySelect from '../components/CurrencySelect';
 
 export default function Settings() {
@@ -127,10 +128,17 @@ export default function Settings() {
 
   const [defaults, setDefaults] = useState(() => {
     const saved = localStorage.getItem('iq-defaults');
-    return saved ? JSON.parse(saved) : {
-      currency: 'USD', taxRate: 0, paymentTerms: 30, invoicePrefix: 'INV-', notes: '',
-    };
+    const base = { currency: 'USD', taxRate: 0, paymentTerms: 30, invoicePrefix: 'INV-', notes: '', template: 'classic' };
+    return saved ? { ...base, ...JSON.parse(saved) } : base;
   });
+
+  // Template selection persists immediately (no separate Save needed).
+  const selectTemplate = (id: string) => {
+    const next = { ...defaults, template: id };
+    setDefaults(next);
+    localStorage.setItem('iq-defaults', JSON.stringify(next));
+    toast(`${id.charAt(0).toUpperCase() + id.slice(1)} template selected`, 'success');
+  };
 
   // Once profiles load, default to editing the default profile (or the first one).
   useEffect(() => {
@@ -554,14 +562,34 @@ export default function Settings() {
       {activeTab === 'templates' && (
         <div className="card">
           <h3>Invoice Templates</h3>
-          <div className="templates-grid">
-            {['Classic', 'Modern', 'Minimal'].map(tpl => (
-              <div key={tpl} className="template-card">
-                <div className="template-preview" />
-                <p className="font-medium">{tpl}</p>
-                <p className="text-sm text-secondary">Clean and professional</p>
-              </div>
-            ))}
+          <p className="text-sm text-secondary">Pick a style — it applies to your invoice PDFs and the client portal.</p>
+          <div className="templates-grid" style={{ marginTop: 16 }}>
+            {TEMPLATES.map(tpl => {
+              const selected = (defaults.template || 'classic') === tpl.id;
+              return (
+                <div
+                  key={tpl.id}
+                  className={`template-card ${selected ? 'selected' : ''}`}
+                  onClick={() => selectTemplate(tpl.id)}
+                  style={{ cursor: 'pointer', position: 'relative' }}
+                >
+                  {selected && (
+                    <span style={{ position: 'absolute', top: 10, right: 10, background: 'var(--primary)', color: '#fff', borderRadius: 100, width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✓</span>
+                  )}
+                  {/* Mini invoice preview reflecting the template's style */}
+                  <div className="template-preview" style={{ background: '#fff', border: '1px solid var(--border)', padding: 10, display: 'block' }}>
+                    <div style={{ height: 14, width: '55%', background: rgbCss(tpl.accent), borderRadius: 2, marginBottom: 8 }} />
+                    <div style={{ height: 6, background: tpl.tableTheme === 'plain' ? '#e2e8f0' : rgbCss(tpl.accent), opacity: tpl.tableTheme === 'plain' ? 1 : 0.85, marginBottom: 4, borderRadius: 1 }} />
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{ height: 5, background: tpl.tableTheme === 'striped' && i % 2 ? '#f1f5f9' : '#eef2f7', marginBottom: 3, borderRadius: 1, borderBottom: tpl.tableTheme === 'grid' ? '1px solid #e2e8f0' : 'none' }} />
+                    ))}
+                    <div style={{ marginTop: 8, marginLeft: 'auto', height: 9, width: '40%', background: tpl.filledTotal ? rgbCss(tpl.accent) : 'transparent', borderBottom: tpl.filledTotal ? 'none' : `2px solid ${rgbCss(tpl.accent)}`, borderRadius: 2 }} />
+                  </div>
+                  <p className="font-medium">{tpl.name}</p>
+                  <p className="text-sm text-secondary">{tpl.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

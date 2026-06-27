@@ -9,6 +9,7 @@ import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
 import { callAi } from '../lib/ai';
 import { buildPaymentOptions, primaryPaymentLink } from '../lib/payments';
+import { getTemplate } from '../lib/templates';
 import { logAudit } from '../lib/audit';
 import CurrencySelect from '../components/CurrencySelect';
 import type { Client } from '../types/database';
@@ -269,8 +270,9 @@ export default function InvoiceForm() {
     const margin = 15;
     const rightX = pageW - margin;                    // 195
 
-    // Palette
-    const indigo: [number, number, number] = [99, 102, 241];
+    // Palette — accent comes from the selected template.
+    const tpl = getTemplate(getDefaults().template);
+    const indigo: [number, number, number] = tpl.accent;
     const dark: [number, number, number] = [30, 41, 59];
     const gray: [number, number, number] = [100, 116, 139];
     const line: [number, number, number] = [226, 232, 240];
@@ -377,10 +379,10 @@ export default function InvoiceForm() {
         `${i.tax_rate > 0 ? i.tax_rate : taxRate}%`,
         `${s}${i.amount.toFixed(2)}`,
       ]),
-      theme: 'striped',
+      theme: tpl.tableTheme,
       styles: { fontSize: 9.5, cellPadding: 3, textColor: dark },
       headStyles: { fillColor: indigo, textColor: [255, 255, 255], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      ...(tpl.tableTheme === 'striped' ? { alternateRowStyles: { fillColor: [248, 250, 252] as [number, number, number] } } : {}),
       columnStyles: {
         0: { halign: 'left' },
         1: { halign: 'center', cellWidth: 18 },
@@ -406,13 +408,20 @@ export default function InvoiceForm() {
     totalRow('Tax', `${s}${taxAmount.toFixed(2)}`);
     if (discount > 0) totalRow('Discount', `-${s}${discount.toFixed(2)}`);
 
-    // Total highlighted band
+    // Total — filled accent band (Classic/Modern) or a clean underline (Minimal).
     ty += 1;
-    setFill(indigo);
-    doc.rect(labelX - 5, ty - 5, (rightX - labelX) + 10, 11, 'F');
+    if (tpl.filledTotal) {
+      setFill(indigo);
+      doc.rect(labelX - 5, ty - 5, (rightX - labelX) + 10, 11, 'F');
+      doc.setTextColor(255, 255, 255);
+    } else {
+      setDraw(indigo);
+      doc.setLineWidth(0.6);
+      doc.line(labelX - 5, ty + 6, rightX, ty + 6);
+      setText(dark);
+    }
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
     doc.text('Total', labelX, ty + 2);
     doc.text(`${s}${total.toFixed(2)}`, rightX, ty + 2, { align: 'right' });
     ty += 14;
