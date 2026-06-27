@@ -399,14 +399,16 @@ export default function Settings() {
           </div>
 
           <div className="form-group">
-            <label>Stripe Payment Link</label>
-            <input
-              type="text"
-              value={payments.stripe_payment_link}
-              onChange={e => setPayments({ ...payments, stripe_payment_link: e.target.value })}
-              placeholder="https://buy.stripe.com/..."
-            />
-            <span className="text-sm text-secondary">Create one in your Stripe dashboard → Payment Links.</span>
+            <label>Stripe</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <button type="button" disabled className="btn btn-primary" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+                Connect with Stripe
+              </button>
+              <span className="badge badge-unpaid">Coming Soon</span>
+            </div>
+            <span className="text-sm text-secondary">
+              One-click Stripe Connect — clients pay each invoice's exact amount and it's marked paid automatically. Launching soon.
+            </span>
           </div>
 
           <div className="form-group">
