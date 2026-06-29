@@ -156,6 +156,7 @@ export interface BusinessProfile {
   payment_instructions: string | null;
   profile_name: string | null;
   is_default: boolean;
+  white_label: boolean;
   created_at: string;
   updated_at: string;
 }

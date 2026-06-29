@@ -90,9 +90,7 @@ Deno.serve(async (req) => {
         <p style="margin:8px 0 0;font-size:16px"><strong>Amount due:</strong> ${esc(inv.currency)} ${amountDue}</p>
       </div>
       <p>Please arrange payment at your earliest convenience. Thank you!</p>
-      <p style="color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:24px">
-        Sent via InvoiceQueen
-      </p>
+      ${biz.white_label ? '' : `<p style="color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:24px">Sent via InvoiceQueen</p>`}
     </div>`;
 
     const res = await fetch('https://api.resend.com/emails', {

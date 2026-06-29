@@ -20,7 +20,7 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [business, setBusiness] = useState({
-    profile_name: '', business_name: '', email: '', phone: '', address: '',
+    profile_name: '', business_name: '', email: '', phone: '', address: '', white_label: false,
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   // Which profile the Business Profile form is currently editing.
@@ -67,6 +67,7 @@ export default function Settings() {
       email: p.email || '',
       phone: p.phone || '',
       address: p.address || '',
+      white_label: p.white_label ?? false,
     });
     setLogoUrl(p.logo_url || null);
     setReminders({
@@ -200,6 +201,7 @@ export default function Settings() {
       email: business.email || null,
       phone: business.phone || null,
       address: business.address || null,
+      white_label: business.white_label,
       logo_url: logoUrl || null,
       reminder_enabled: reminders.reminder_enabled,
       late_fee_enabled: reminders.late_fee_enabled,
@@ -349,6 +351,12 @@ export default function Settings() {
           <div className="form-group">
             <label>Address</label>
             <textarea value={business.address} onChange={e => setBusiness({ ...business, address: e.target.value })} rows={3} placeholder="Business address..." />
+          </div>
+          <div className="form-group">
+            <label className="flex gap-2" style={{ alignItems: 'center' }}>
+              <input type="checkbox" checked={business.white_label} onChange={e => setBusiness({ ...business, white_label: e.target.checked })} />
+              White-label — remove "Sent via InvoiceQueen" from emails &amp; portal
+            </label>
           </div>
           <div className="form-actions">
             <button onClick={handleSaveBusiness} className="btn btn-primary" disabled={saving || !business.business_name}>

@@ -104,9 +104,7 @@ Deno.serve(async (req) => {
     ${invoice.notes ? `<p style="color:#64748b;font-size:14px">${esc(invoice.notes)}</p>` : ''}
     ${instructions}
     <p style="margin-top:24px">Thank you for your business!</p>
-    <p style="color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:24px">
-      Sent via InvoiceQueen
-    </p>
+    ${biz?.white_label ? '' : `<p style="color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:24px">Sent via InvoiceQueen</p>`}
   </div>`;
 
   const emailBody: Record<string, unknown> = {
