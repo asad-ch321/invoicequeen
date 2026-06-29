@@ -11,6 +11,7 @@ import { callAi } from '../lib/ai';
 import { buildPaymentOptions, primaryPaymentLink } from '../lib/payments';
 import { getTemplate } from '../lib/templates';
 import { logAudit } from '../lib/audit';
+import { dbErrorMessage } from '../lib/errors';
 import CurrencySelect from '../components/CurrencySelect';
 import type { Client, Product } from '../types/database';
 import jsPDF from 'jspdf';
@@ -234,7 +235,8 @@ export default function InvoiceForm() {
       await (supabase.from('invoices') as any).update(invoiceData).eq('id', id);
       await (supabase.from('invoice_items') as any).delete().eq('invoice_id', id!);
     } else {
-      const { data } = await (supabase.from('invoices') as any).insert(invoiceData).select('id').single();
+      const { data, error } = await (supabase.from('invoices') as any).insert(invoiceData).select('id').single();
+      if (error) { toast(dbErrorMessage(error), 'error'); setSaving(false); return; }
       invoiceId = data?.id;
     }
 

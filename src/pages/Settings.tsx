@@ -6,6 +6,7 @@ import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
 import { useUserPlan } from '../hooks/useUserPlan';
 import { useToast } from '../contexts/ToastContext';
+import { dbErrorMessage } from '../lib/errors';
 import { TEMPLATES, rgbCss } from '../lib/templates';
 import CurrencySelect from '../components/CurrencySelect';
 
@@ -120,10 +121,11 @@ export default function Settings() {
     if (!user) return;
     const isFirst = profiles.length === 0;
     const label = `Business ${profiles.length + 1}`;
-    const { data } = await (supabase.from('business_profiles') as any)
+    const { data, error } = await (supabase.from('business_profiles') as any)
       .insert({ user_id: user.id, business_name: '', profile_name: label, is_default: isFirst })
       .select('*')
       .single();
+    if (error) { toast(dbErrorMessage(error), 'error'); return; }
     await loadProfiles();
     if (data) {
       setEditingProfileId(data.id);

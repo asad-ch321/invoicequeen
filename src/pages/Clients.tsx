@@ -4,11 +4,12 @@ import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { dbErrorMessage } from '../lib/errors';
 import type { Client } from '../types/database';
 
 export default function Clients() {
   const { user } = useAuth();
-  const { confirm } = useToast();
+  const { confirm, toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,8 @@ export default function Clients() {
     if (editingClient) {
       await (supabase.from('clients') as any).update({ ...form }).eq('id', editingClient.id);
     } else {
-      await (supabase.from('clients') as any).insert({ ...form, user_id: user.id });
+      const { error } = await (supabase.from('clients') as any).insert({ ...form, user_id: user.id });
+      if (error) { toast(dbErrorMessage(error), 'error'); return; }
     }
     setShowModal(false);
     fetchClients();
