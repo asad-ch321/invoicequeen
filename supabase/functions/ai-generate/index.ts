@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
   const AI_KEY = Deno.env.get('AI_GATEWAY_API_KEY');
   if (!AI_KEY) return json({ error: 'AI service not configured' }, 500);
-  const MODEL = Deno.env.get('DEEPSEEK_MODEL') ?? 'deepseek/deepseek-chat';
+  const MODEL = Deno.env.get('DEEPSEEK_MODEL') ?? 'deepseek/deepseek-v4-flash';
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
   const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
