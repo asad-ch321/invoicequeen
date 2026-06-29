@@ -37,6 +37,10 @@ export default function Settings() {
     paypal_me: '', stripe_payment_link: '', payment_instructions: '',
   });
 
+  const [smtp, setSmtp] = useState({
+    smtp_host: '', smtp_port: 465, smtp_user: '', smtp_pass: '', smtp_from: '',
+  });
+
   const [profiles, setProfiles] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [newMember, setNewMember] = useState({ email: '', role: 'viewer' });
@@ -80,6 +84,13 @@ export default function Settings() {
       paypal_me: p.paypal_me || '',
       stripe_payment_link: p.stripe_payment_link || '',
       payment_instructions: p.payment_instructions || '',
+    });
+    setSmtp({
+      smtp_host: p.smtp_host || '',
+      smtp_port: Number(p.smtp_port) || 465,
+      smtp_user: p.smtp_user || '',
+      smtp_pass: p.smtp_pass || '',
+      smtp_from: p.smtp_from || '',
     });
   };
 
@@ -210,6 +221,11 @@ export default function Settings() {
       paypal_me: payments.paypal_me || null,
       stripe_payment_link: payments.stripe_payment_link || null,
       payment_instructions: payments.payment_instructions || null,
+      smtp_host: smtp.smtp_host || null,
+      smtp_port: smtp.smtp_host ? smtp.smtp_port : null,
+      smtp_user: smtp.smtp_user || null,
+      smtp_pass: smtp.smtp_pass || null,
+      smtp_from: smtp.smtp_from || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -240,6 +256,7 @@ export default function Settings() {
     { id: 'defaults', label: 'Invoice Defaults' },
     { id: 'payments', label: 'Payments' },
     { id: 'reminders', label: 'Reminders & Late Fees' },
+    { id: 'smtp', label: 'Custom SMTP' },
     { id: 'team', label: 'Team' },
     { id: 'ai', label: 'AI Credits' },
     { id: 'templates', label: 'Templates' },
@@ -510,6 +527,31 @@ export default function Settings() {
           {!business.business_name && (
             <p className="text-sm text-secondary">Set up your Business Profile first to enable these settings.</p>
           )}
+        </div>
+      )}
+
+      {activeTab === 'smtp' && (
+        <div className="card">
+          <h3>Custom SMTP</h3>
+          <p className="text-sm text-secondary">
+            Send invoice &amp; reminder emails from your own mail server. Leave blank to use InvoiceQueen's default sending.
+          </p>
+          <div className="form-grid-2" style={{ marginTop: 12 }}>
+            <div className="form-group"><label>SMTP Host</label><input type="text" value={smtp.smtp_host} onChange={e => setSmtp({ ...smtp, smtp_host: e.target.value })} placeholder="smtp.yourmail.com" /></div>
+            <div className="form-group"><label>Port</label><input type="number" value={smtp.smtp_port} onChange={e => setSmtp({ ...smtp, smtp_port: parseInt(e.target.value) || 465 })} placeholder="465" /></div>
+            <div className="form-group"><label>Username</label><input type="text" value={smtp.smtp_user} onChange={e => setSmtp({ ...smtp, smtp_user: e.target.value })} /></div>
+            <div className="form-group"><label>Password</label><input type="password" value={smtp.smtp_pass} onChange={e => setSmtp({ ...smtp, smtp_pass: e.target.value })} /></div>
+          </div>
+          <div className="form-group">
+            <label>From address</label>
+            <input type="text" value={smtp.smtp_from} onChange={e => setSmtp({ ...smtp, smtp_from: e.target.value })} placeholder="Your Business <billing@yourmail.com>" />
+          </div>
+          <div className="form-actions">
+            <button onClick={handleSaveBusiness} className="btn btn-primary" disabled={saving || !business.business_name}>
+              <Save size={18} /> {saving ? 'Saving...' : 'Save SMTP'}
+            </button>
+          </div>
+          <p className="text-sm text-secondary">Port 465 = SSL/TLS (recommended). Tip: use an app-specific password.</p>
         </div>
       )}
 

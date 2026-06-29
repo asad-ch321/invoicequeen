@@ -157,6 +157,11 @@ export interface BusinessProfile {
   profile_name: string | null;
   is_default: boolean;
   white_label: boolean;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_user: string | null;
+  smtp_pass: string | null;
+  smtp_from: string | null;
   created_at: string;
   updated_at: string;
 }

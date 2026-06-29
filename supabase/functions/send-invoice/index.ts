@@ -10,6 +10,7 @@
 //   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY — auto-injected
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,7 +37,6 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
   const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? 'InvoiceQueen <onboarding@resend.dev>';
-  if (!RESEND_API_KEY) return json({ error: 'Email service not configured' }, 500);
 
   // Client scoped to the caller's JWT — RLS ensures they can only read their own rows.
   const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
     .eq('user_id', auth.user.id)
     .single();
 
+  if (!biz?.smtp_host && !RESEND_API_KEY) return json({ error: 'Email service not configured' }, 500);
+
   const fromName = biz?.business_name || 'InvoiceQueen';
   const total = Number(invoice.total).toFixed(2);
   const dueLine = invoice.due_date ? `<p style="margin:4px 0;color:#64748b">Due: ${esc(invoice.due_date)}</p>` : '';
@@ -107,32 +109,54 @@ Deno.serve(async (req) => {
     ${biz?.white_label ? '' : `<p style="color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:24px">Sent via InvoiceQueen</p>`}
   </div>`;
 
-  const emailBody: Record<string, unknown> = {
-    from: RESEND_FROM,
-    to: [client.email],
-    reply_to: biz?.email || undefined,
-    subject: `Invoice #${invoice.invoice_number} from ${fromName}`,
-    html,
-  };
-  if (pdf_base64) {
-    emailBody.attachments = [
-      { filename: `${invoice.invoice_number}.pdf`, content: pdf_base64 },
-    ];
-  }
+  const subject = `Invoice #${invoice.invoice_number} from ${fromName}`;
 
-  const resendRes = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(emailBody),
-  });
-
-  if (!resendRes.ok) {
-    const detail = await resendRes.text();
-    console.error('Resend send failed', resendRes.status, 'from=', RESEND_FROM, 'to=', client.email, 'detail=', detail);
-    return json({ error: 'Failed to send email', detail }, 502);
+  if (biz?.smtp_host) {
+    // Custom SMTP path (the business's own mail server).
+    try {
+      const smtpClient = new SMTPClient({
+        connection: {
+          hostname: biz.smtp_host,
+          port: Number(biz.smtp_port) || 465,
+          tls: true,
+          auth: { username: biz.smtp_user, password: biz.smtp_pass },
+        },
+      });
+      await smtpClient.send({
+        from: biz.smtp_from || biz.email || RESEND_FROM,
+        to: client.email,
+        subject,
+        html,
+        attachments: pdf_base64
+          ? [{ filename: `${invoice.invoice_number}.pdf`, content: pdf_base64, encoding: 'base64' }]
+          : [],
+      });
+      await smtpClient.close();
+    } catch (e) {
+      return json({ error: 'SMTP send failed', detail: String(e) }, 502);
+    }
+  } else {
+    // Default shared Resend sender.
+    const emailBody: Record<string, unknown> = {
+      from: RESEND_FROM,
+      to: [client.email],
+      reply_to: biz?.email || undefined,
+      subject,
+      html,
+    };
+    if (pdf_base64) {
+      emailBody.attachments = [{ filename: `${invoice.invoice_number}.pdf`, content: pdf_base64 }];
+    }
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(emailBody),
+    });
+    if (!resendRes.ok) {
+      const detail = await resendRes.text();
+      console.error('Resend send failed', resendRes.status, 'from=', RESEND_FROM, 'to=', client.email, 'detail=', detail);
+      return json({ error: 'Failed to send email', detail }, 502);
+    }
   }
 
   // Record delivery. Use the service role so the update isn't blocked by RLS write rules,
