@@ -23,6 +23,15 @@ const json = (b: unknown, s = 200) =>
 
 const GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 
+// Extract a JSON object from model output that may be wrapped in ```json fences or prose.
+function parseLooseJson(text: string): unknown {
+  let t = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  const first = t.indexOf('{');
+  const last = t.lastIndexOf('}');
+  if (first !== -1 && last !== -1) t = t.slice(first, last + 1);
+  return JSON.parse(t);
+}
+
 interface Prompt { system: string; user: string; json: boolean; }
 
 function buildPrompt(mode: string, input: any): Prompt | null {
@@ -99,7 +108,6 @@ Deno.serve(async (req) => {
         { role: 'system', content: prompt.system },
         { role: 'user', content: prompt.user },
       ],
-      ...(prompt.json ? { response_format: { type: 'json_object' } } : {}),
       temperature: 0.4,
     }),
   });
@@ -113,7 +121,7 @@ Deno.serve(async (req) => {
   const content: string = aiJson?.choices?.[0]?.message?.content ?? '';
   let result: unknown = content;
   if (prompt.json) {
-    try { result = JSON.parse(content); } catch { return json({ error: 'AI returned malformed output' }, 502); }
+    try { result = parseLooseJson(content); } catch { return json({ error: 'AI returned malformed output', detail: content.slice(0, 200) }, 502); }
   }
 
   // Charge one credit now that we have a valid result.
