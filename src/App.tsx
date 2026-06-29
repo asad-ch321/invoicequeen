@@ -18,6 +18,7 @@ import RecurringInvoices from './pages/RecurringInvoices';
 import Payments from './pages/Payments';
 import CreditNotes from './pages/CreditNotes';
 import Estimates from './pages/Estimates';
+import Products from './pages/Products';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="payments" element={<Payments />} />
               <Route path="credit-notes" element={<CreditNotes />} />
               <Route path="estimates" element={<Estimates />} />
+              <Route path="products" element={<Products />} />
               <Route path="expenses" element={<Expenses />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />

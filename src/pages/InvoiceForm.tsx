@@ -12,7 +12,7 @@ import { buildPaymentOptions, primaryPaymentLink } from '../lib/payments';
 import { getTemplate } from '../lib/templates';
 import { logAudit } from '../lib/audit';
 import CurrencySelect from '../components/CurrencySelect';
-import type { Client } from '../types/database';
+import type { Client, Product } from '../types/database';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -24,6 +24,7 @@ interface LineItem {
   amount: number;
   tax_rate: number;
   position: number;
+  product_id?: string | null;
 }
 
 const getDefaults = () => {
@@ -48,6 +49,7 @@ export default function InvoiceForm() {
   const [publicToken, setPublicToken] = useState<string | null>(null);
 
   const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [clientId, setClientId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [status, setStatus] = useState('draft');
@@ -69,6 +71,9 @@ export default function InvoiceForm() {
     if (!user) return;
     supabase.from('clients').select('*').eq('user_id', user.id).order('name').then(({ data }: any) => {
       setClients(data || []);
+    });
+    supabase.from('products').select('*').eq('user_id', user.id).order('name').then(({ data }: any) => {
+      setProducts(data || []);
     });
 
     if (isEdit) {
@@ -98,6 +103,7 @@ export default function InvoiceForm() {
             amount: Number(i.amount),
             tax_rate: Number(i.tax_rate) || 0,
             position: i.position,
+            product_id: i.product_id || null,
           })));
         }
         setLoading(false);
@@ -131,6 +137,21 @@ export default function InvoiceForm() {
 
   const addItem = () => {
     setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, amount: 0, tax_rate: 0, position: prev.length }]);
+  };
+
+  // Append a line item from a saved product (carries product_id for inventory).
+  const addProductLine = (productId: string) => {
+    const p = products.find(x => x.id === productId);
+    if (!p) return;
+    setItems(prev => [...prev, {
+      description: p.name,
+      quantity: 1,
+      unit_price: Number(p.unit_price),
+      amount: Number(p.unit_price),
+      tax_rate: 0,
+      position: prev.length,
+      product_id: p.id,
+    }]);
   };
 
   const removeItem = (index: number) => {
@@ -226,8 +247,22 @@ export default function InvoiceForm() {
         amount: item.amount,
         tax_rate: item.tax_rate || 0,
         position: i,
+        product_id: item.product_id || null,
       }));
       await (supabase.from('invoice_items') as any).insert(itemsData);
+
+      // Decrement inventory for tracked products (new invoices only).
+      if (!isEdit) {
+        for (const item of items) {
+          if (!item.product_id) continue;
+          const prod = products.find(p => p.id === item.product_id);
+          if (prod?.track_inventory) {
+            await (supabase.from('products') as any)
+              .update({ stock_qty: Math.max(0, Number(prod.stock_qty) - item.quantity) })
+              .eq('id', prod.id);
+          }
+        }
+      }
     }
 
     await logAudit(user.id, isEdit ? 'invoice.updated' : 'invoice.created', 'invoice', invoiceId, { invoice_number: finalNumber, total });
@@ -580,10 +615,23 @@ export default function InvoiceForm() {
         <div className="card">
           <div className="card-header-row">
             <h3>Line Items</h3>
+            <div className="flex gap-2" style={{ alignItems: 'center' }}>
+              {products.length > 0 && (
+                <select
+                  value=""
+                  onChange={e => { if (e.target.value) { addProductLine(e.target.value); e.target.value = ''; } }}
+                  className="input-sm"
+                  title="Add a saved product"
+                >
+                  <option value="">+ Add product…</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              )}
             <button type="button" onClick={() => setAiModalOpen(true)} className="btn btn-sm btn-ghost" title="Draft line items with AI (1 credit)">
               <Sparkles size={16} /> AI Writer
               {aiBalance !== null && <span className="text-sm text-secondary">&nbsp;({aiBalance} credits)</span>}
             </button>
+            </div>
           </div>
           <table className="table">
             <thead>

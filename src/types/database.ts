@@ -113,6 +113,20 @@ export interface Estimate {
   client?: Client;
 }
 
+export interface Product {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  sku: string | null;
+  unit_price: number;
+  currency: string;
+  track_inventory: boolean;
+  stock_qty: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Expense {
   id: string;
   user_id: string;
