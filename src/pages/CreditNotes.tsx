@@ -132,7 +132,7 @@ export default function CreditNotes() {
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal modal-pad" onClick={e => e.stopPropagation()}>
             <h3>New Credit Note</h3>
             <div className="form-group">
               <label>Linked Invoice (optional)</label>

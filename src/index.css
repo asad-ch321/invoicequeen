@@ -928,3 +928,7 @@ body {
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* Padding for modals that hold raw content (no modal-header/modal-body sections). */
+.modal-pad { padding: 24px; }
+.modal-pad h3 { margin-bottom: 6px; }

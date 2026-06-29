@@ -659,8 +659,8 @@ export default function InvoiceForm() {
 
       {aiModalOpen && (
         <div className="modal-overlay" onClick={() => !aiBusy && setAiModalOpen(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3><Sparkles size={18} /> AI Invoice Writer</h3>
+          <div className="modal modal-pad" onClick={e => e.stopPropagation()}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Sparkles size={18} /> AI Invoice Writer</h3>
             <p className="text-sm text-secondary">Describe the work or project. AI will draft the line items for you. Costs 1 credit.</p>
             <div className="form-group">
               <textarea
