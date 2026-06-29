@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="64" viewBox="0 0 280 64" font-family="Inter, system-ui, sans-serif">
   <defs>
     <linearGradient id="iq" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6366f1"/>
@@ -13,4 +13,5 @@
     <circle cx="-16" cy="-2" r="2.3" fill="#c7d2fe"/>
     <circle cx="16" cy="-2" r="2.3" fill="#c7d2fe"/>
   </g>
+  <text x="80" y="40" font-size="26" font-weight="700" fill="#1e293b" letter-spacing="-0.5">Invoice<tspan fill="#6366f1">Queen</tspan></text>
 </svg>
