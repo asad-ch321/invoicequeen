@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useBusinessProfile } from '../hooks/useBusinessProfile';
 import { useAiCredits } from '../hooks/useAiCredits';
+import { useUserPlan } from '../hooks/useUserPlan';
 import { useToast } from '../contexts/ToastContext';
 import { TEMPLATES, rgbCss } from '../lib/templates';
 import CurrencySelect from '../components/CurrencySelect';
@@ -12,7 +13,25 @@ export default function Settings() {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetch } = useBusinessProfile();
   const { balance: aiBalance } = useAiCredits();
+  const { plan, refetch: refetchPlan } = useUserPlan();
   const { toast, confirm } = useToast();
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+
+  const redeem = async () => {
+    if (!redeemCode.trim()) return;
+    setRedeeming(true);
+    const { data, error } = await supabase.rpc('redeem_appsumo_code', { p_code: redeemCode.trim() });
+    setRedeeming(false);
+    if (error) { toast(error.message, 'error'); return; }
+    if (data?.ok) {
+      toast('Lifetime plan activated! 🎉', 'success');
+      setRedeemCode('');
+      refetchPlan();
+    } else {
+      toast(data?.error || 'Could not redeem code', 'error');
+    }
+  };
   const [activeTab, setActiveTab] = useState('business');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -258,6 +277,7 @@ export default function Settings() {
     { id: 'reminders', label: 'Reminders & Late Fees' },
     { id: 'smtp', label: 'Custom SMTP' },
     { id: 'team', label: 'Team' },
+    { id: 'plan', label: 'Plan' },
     { id: 'ai', label: 'AI Credits' },
     { id: 'templates', label: 'Templates' },
   ];
@@ -583,6 +603,50 @@ export default function Settings() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {activeTab === 'plan' && (
+        <div className="card">
+          <h3>Your Plan</h3>
+          <div className="totals-section" style={{ marginTop: 12 }}>
+            <div className="total-row total-final">
+              <span>Current plan</span>
+              <span>
+                {plan?.plan === 'lifetime'
+                  ? <span className="badge badge-paid">Lifetime ✓</span>
+                  : <span className="badge badge-unpaid">Free</span>}
+              </span>
+            </div>
+            {plan?.plan === 'lifetime' && (
+              <div className="total-row"><span>AI credits / month</span><span>{plan.monthly_ai_credits}</span></div>
+            )}
+          </div>
+
+          {plan?.plan !== 'lifetime' && (
+            <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+              <h3>Redeem AppSumo Code</h3>
+              <p className="text-sm text-secondary">Got a code from AppSumo? Enter it to unlock lifetime access.</p>
+              <div className="flex gap-2" style={{ marginTop: 10 }}>
+                <input
+                  type="text"
+                  value={redeemCode}
+                  onChange={e => setRedeemCode(e.target.value.toUpperCase())}
+                  placeholder="IQ-XXXXXXXXXX"
+                  style={{ fontFamily: 'monospace', letterSpacing: 1 }}
+                />
+                <button onClick={redeem} disabled={redeeming || !redeemCode.trim()} className="btn btn-primary">
+                  {redeeming ? 'Redeeming...' : 'Redeem'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {plan?.plan === 'lifetime' && (
+            <p className="text-sm text-secondary" style={{ marginTop: 16 }}>
+              🎉 You have lifetime access — unlimited invoices, clients, businesses, white-label, custom SMTP, and {plan.monthly_ai_credits} AI credits every month.
+            </p>
+          )}
         </div>
       )}
 
