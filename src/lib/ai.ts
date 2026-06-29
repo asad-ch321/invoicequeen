@@ -13,10 +13,17 @@ export async function callAi<T>(mode: string, input: unknown): Promise<AiResult<
     body: { mode, input },
   });
   if (error) {
-    // Supabase wraps non-2xx as FunctionsHttpError; surface the body if present.
+    // Supabase wraps non-2xx as FunctionsHttpError; read the JSON body for the real reason.
     const ctx = (error as any).context;
-    if (ctx?.status === 402) throw new Error('insufficient_credits');
-    throw new Error(error.message || 'AI request failed');
+    let detail = error.message || 'AI request failed';
+    try {
+      const body = await ctx?.json?.();
+      if (body?.error === 'insufficient_credits') throw new Error('insufficient_credits');
+      if (body) detail = body.detail ? `${body.error}: ${body.detail}` : (body.error || detail);
+    } catch (e) {
+      if ((e as Error).message === 'insufficient_credits') throw e;
+    }
+    throw new Error(detail);
   }
   if (!data?.ok) throw new Error(data?.error || 'AI request failed');
   return data as AiResult<T>;
